@@ -1,4 +1,8 @@
-Quick readme: start with demo_template.m, and modify the problem to the one you want to sample; demo_template has a few examples. 
+Quick readme: 
+
+Start with demo_template.m, and modify the problem to the one you want to sample; demo_template has a few examples. 
+
+In more detail:
 
 The main component of this package is the function
 sample in sample.m
