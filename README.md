@@ -41,7 +41,7 @@ The output of sample is a struct "o" with fields including:
 
                 samples: dim x #steps
 	    prepareTime: pre-processing time 
-                    dim: 1000
+                    dim: dimension of instance
                nSamples: Number of nearly independent samples
                     ess: Effective Sample Size in each coordinate
              mixingTime: estimated #steps to mix
