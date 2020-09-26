@@ -30,24 +30,21 @@ Before using sample, we set up the parameters for sampling via a struct called o
                 weightedBarrier: True/False
                    dynamicBound: True/False
                       odeMethod: default: @implicit_midpoint
-                     maxODEStep: 20
                      outputFunc: [function_handle]
                       debugMode: True/False
-                        maxTime: 86400
-                        maxStep: 300000
+                        maxTime: 86400 (max sampling time in seconds)
+                        maxStep: 300000 (maximum number of steps)
                     minStepSize: 1.0000e-08  (minimum step size of the ODE solver)
 
  
-The output of sample is a struct o with fields including
+The output of sample is a struct "o" with fields including:
 
-                samples: [1000×1383 double]
-               stepSize: 0.1653
-            prepareTime: 0.1788
+                samples: dim x #steps
+	    prepareTime: pre-processing time 
                     dim: 1000
-               nSamples: 234.7977
-          acceptedSteps: 12555
-                    ess: [1001×1 double] Effective Sample Size in each coordinate
-             mixingTime: 57.9605
-             sampleTime: 31.6278
+               nSamples: Number of nearly independent samples
+                    ess: Effective Sample Size in each coordinate
+             mixingTime: estimated #steps to mix
+             sampleTime: total sampling time
 
 
