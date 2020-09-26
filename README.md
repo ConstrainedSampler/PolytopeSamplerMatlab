@@ -24,17 +24,10 @@ This core function sample.m is supplemented by functions to:
 
 Before using sample, we set up the parameters for sampling via a struct called opts with the following properties:
 
-			   seed: 'shuffle'
                         nSketch: JL dimension for fast leverage score computation (0 means no JL).
-               adaptiveStepSize: True/False
-                weightedBarrier: True/False
-                   dynamicBound: True/False
-                      odeMethod: default: @implicit_midpoint
                      outputFunc: [function_handle]
-                      debugMode: True/False
                         maxTime: 86400 (max sampling time in seconds)
                         maxStep: 300000 (maximum number of steps)
-                    minStepSize: 1.0000e-08  (minimum step size of the ODE solver)
 
  
 The output of sample is a struct "o" with fields including:
