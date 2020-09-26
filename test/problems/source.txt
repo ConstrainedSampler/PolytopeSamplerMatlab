@@ -1,3 +1,6 @@
+Source of the polytopes:
+
 Recon1          http://bigg.ucsd.edu/models/RECON1
 Recon2.04       https://www.vmh.life/#downloadview
-Recon3D_3.01	https://www.vmh.life/#downloadview
+Recon3D_3.01    https://www.vmh.life/#downloadview
+netlib          https://www.netlib.org/lp/data/index.html
