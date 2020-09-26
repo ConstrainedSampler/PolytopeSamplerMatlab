@@ -84,7 +84,7 @@ function [cscale,rscale] = gmscale(A,iprint,scltol)
     SA      = Rinv*A;
     [I,J,V] = find(SA);
     invSA   = sparse(I,J,1./V,m,n);
-    cmax    = full(max(   SA))';   % column vector
+    cmax    = full(max(SA))';   % column vector
     cmin    = full(max(invSA))';   % column vector
     cmin    = 1./(cmin + eps);
     sratio  = max( cmax./cmin );   % Max col ratio
@@ -103,14 +103,16 @@ function [cscale,rscale] = gmscale(A,iprint,scltol)
     % Set new row scales for the next pass.
 
     cscale(cscale==0) = 1;
+    cscale  = 2.^nextpow2(full(cscale));
     Cinv    = diag(sparse(1./cscale));
     SA      = A*Cinv;                  % Scaled A
     [I,J,V] = find(SA);
     invSA   = sparse(I,J,1./V,m,n);
-    rmax    = full(max(   SA,[],2));   % column vector
+    rmax    = full(max(SA,[],2));   % column vector
     rmin    = full(max(invSA,[],2));   % column vector
     rmin    = 1./(rmin + eps);
     rscale  = sqrt( max(rmin, damp*rmax) .* rmax );
+    rscale  = 2.^nextpow2(full(rscale));
   end
 %---------------------------------------------------------------
 % End of main loop.
@@ -126,7 +128,7 @@ function [cscale,rscale] = gmscale(A,iprint,scltol)
   [I,J,V] = find(SA);
   cscale  = full(max(SA))';   % column vector
   cscale(cscale==0) = 1;
-
+  cscale  = 2.^nextpow2(full(cscale));
 % Find the min and max scales.
 
   if iprint>0

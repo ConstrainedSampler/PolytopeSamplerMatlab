@@ -1,185 +1,341 @@
 classdef Polytope < handle
-% The polytope is defined by {Tx+y where Ax=b, lb <= x <= ub}
+    % The problem is defined by exp(-f(x)) over {Tx+y where Ax=b, lb <= x <= ub}
     properties
-        % constraint matrix A
-        A
+        A   % constraint matrix A
+        b   % constraint vector b
+        T	% transformation T of the domain
+        y	% shift of the domain
+        f	% the objective function and its derivatives in the original space
+        barrier % TwoSidedBarrier
+        df
+        ddf
+        dddf
         
-        % constraint vector b
-        b
-        
-        % lower bound lb
-        lb
-        
-        % upper bound ub
-        ub
-        
-        % transformation T of the domain
-        T
-        
-        % shift of the domain
-        y
-        
-        % options
         opts
-    end
-    
-    properties (Access = private)
-        centerCache
-    end
-    
-	properties (Dependent)
-        % the number of variables
+        
+        % private variables
+        ham
+        center      % analytic center
         n
         
-        % analytic center
-        center
-	end
-   
+        % TODO: Assumed each row of T contains at most 1 non-zero
+        T2          % used for computing ddf, dddf
+        T3
+    end
+    
+    methods(Static)
+        function P = standardize(P)
+            if nonempty(P, 'Aeq')
+                n = size(P.Aeq,2);
+            elseif nonempty(P, 'Aineq')
+                n = size(P.Aineq,2);
+            elseif nonempty(P, 'lb')
+                n = length(P.lb);
+            elseif nonempty(P, 'ub')
+                n = length(P.ub);
+            elseif nonempty(P, 'center')
+                n = length(P.center);
+            else
+                error('Polytope:standardize', 'For unconstrained problems, an initial point "center" is required.');
+            end
+            
+            %% Set all non-existence fields
+            if ~nonempty(P, 'Aeq')
+                P.Aeq = sparse(zeros(0, n));
+            end
+            
+            if ~nonempty(P, 'beq')
+                P.beq = zeros(size(P.Aeq, 1), 1);
+            end
+            
+            if ~nonempty(P, 'Aineq')
+                P.Aineq = sparse(zeros(0, n));
+            end
+            
+            if ~nonempty(P, 'bineq')
+                P.bineq = zeros(size(P.Aineq, 1), 1);
+            end
+            
+            if ~nonempty(P, 'lb')
+                P.lb = -Inf * ones(n, 1);
+            end
+            
+            if ~nonempty(P,'ub')
+                P.ub = Inf * ones(n,1);
+            end
+            
+            if ~nonempty(P,'center')
+                P.center = [];
+            end
+            
+            %% Check the input dimensions
+            assert(all(size(P.Aineq) == [length(P.bineq) n]));
+            assert(all(size(P.Aeq) == [length(P.beq) n]));
+            assert(all(size(P.lb) == [n 1]));
+            assert(all(size(P.ub) == [n 1]));
+            assert(all(P.lb <= P.ub));
+        end
+    end
+    
     methods
         function o = Polytope(P, opts)
-            % Convert a structure P into the polytope object with the following fields
+            % Input: a structure P with the following fields
             %  .Aineq
             %  .bineq
             %  .Aeq
             %  .beq
             %  .lb
             %  .ub
-            % describing a polytope
+            %  .f
+            %  .df
+            %  .ddf
+            %  .dddf
+            % describing a log-concave distribution given by
+            %   exp(-sum f_i(x_i))
+            %       over
             %   {Aineq x <= bineq, Aeq x = beq, lb <= x <= ub}
-            nP = P.n;
-			
-            %% Set all non-existence fields
-            if ~(isprop(P,'Aineq') || isfield(P,'Aineq')) || isempty(P.Aineq)
-                P.Aineq = sparse(zeros(0,nP));
-            end
-            
-            if ~(isprop(P,'bineq') || isfield(P,'bineq')) ||isempty(P.bineq)
-                P.bineq = zeros(size(P.Aineq,1),1);
-            end
-
-            if ~(isprop(P,'Aeq') || isfield(P,'Aeq')) ||isempty(P.Aeq)
-                P.Aeq = sparse(zeros(0,nP));
-            end
-            
-            if ~(isprop(P,'beq') || isfield(P,'beq')) ||isempty(P.beq)
-                P.beq = zeros(size(P.Aeq,1),1);
-            end
-            
-            if ~(isprop(P,'lb') || isfield(P,'lb')) ||isempty(P.lb)
-                P.lb = -Inf*ones(nP,1);
-            end
-            
-            if ~(isprop(P,'ub') || isfield(P,'ub')) ||isempty(P.ub)
-                P.ub = Inf*ones(nP,1);
-            end
-            
-            %% Check the input dimensions
-            assert(all(size(P.Aineq) == [length(P.bineq), nP]));
-            assert(all(size(P.Aeq) == [length(P.beq), nP]));
-            assert(all(size(P.lb) == [nP 1]));
-            assert(all(size(P.ub) == [nP 1]));
-            assert(all(P.lb <= P.ub));
+            % where f is given by a vector function of its 1-st, 2-nd, 3-rd
+            % derivative.
+            %
+            % Case 1: df is not defined
+            %   f(x) = 0.
+            % In this case, f, ddf, dddf must be empty.
+            %
+            % Case 2: df is a vector
+            %   f_i(x_i) = df_i x_i.
+            % In this case, f, ddf, dddf must be empty.
+            %
+            % Case 3: df is a function handle
+            %   f need to be defined as a function handle.
+            %   df need to be the deriative of f
+            %   ddf is optional. Providing ddf improves the mixing time.
+            %   When ddf is provided, both ddf and dddf must be provided as
+            %   a function handle.
+            P = Polytope.standardize(P);
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
-            numIneq = size(P.Aineq,1);
-            numEq = size(P.Aeq,1);
-
-            o.A = [P.Aeq sparse(numEq,numIneq); P.Aineq speye(numIneq)];
-
+            nP = size(P.Aeq, 2);
+            nIneq = size(P.Aineq, 1);
+            nEq = size(P.Aeq, 1);
+            
+            o.A = [P.Aeq sparse(nEq, nIneq); P.Aineq speye(nIneq)];
             o.b = [P.beq; P.bineq];
-            o.lb = [P.lb; zeros(numIneq,1)];
-            o.ub = [P.ub; Inf*ones(numIneq,1)];
+            lb = [P.lb; zeros(nIneq, 1)];
+            ub = [P.ub; Inf*ones(nIneq, 1)];
+            o.center = [];
+            o.n = length(lb);
+            o.opts = opts;
             
             %% Move all variables with lb == ub to Ax = b
-            fixedVars = P.ub - P.lb < 2*eps;
+            fixedVars = dblcmp(ub, lb);
             if sum(fixedVars) ~= 0
-                I = speye(length(o.lb));
-                o.A = [I(fixedVars,:); o.A];
-                o.b = [(o.lb(fixedVars)+o.ub(fixedVars))/2; o.b];
-                o.ub(fixedVars) = +Inf;
-                o.lb(fixedVars) = -Inf;
+                I = speye(o.n);
+                o.A = [I(fixedVars, :); o.A];
+                o.b = [(lb(fixedVars)+ub(fixedVars))/2; o.b];
+                ub(fixedVars) = +Inf;
+                lb(fixedVars) = -Inf;
+                o.n = length(lb);
+            end
+            o.barrier = TwoSidedBarrier(lb, ub);
+            o.barrier.extraHessian = o.opts.extraHessian;
+            
+            %% Store f, df, ddf, dddf
+            randVec = randn(nP, 1);
+            hasf = isfield(P, 'f') && ~isempty(P.f);
+            hasdf = isfield(P, 'df') && ~isempty(P.df);
+            hasddf = isfield(P, 'ddf') && ~isempty(P.ddf);
+            hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
+            
+            % Case 1: df is empty
+            if ~hasdf
+                assert(~hasf && ~hasddf && ~hasdddf);
+                o.f = [];
+                o.df = [];
+                o.ddf = [];
+                o.dddf = [];
+            elseif isfloat(P.df) % Case 2: df is a vector
+                assert(all(size(P.df) == [nP 1]));
+                o.f = @(x) sum(x.*P.df);
+                o.df = @(x) P.df;
+                o.ddf = [];
+                o.dddf = [];
+            elseif isa(P.df, 'function_handle') % Case 3: df is handle
+                assert(hasf);
+                assert(isa(P.f,'function_handle'));
+                assert(all(size(P.f(randVec)) == [1 1]));
+                assert(all(size(P.df(randVec)) == [nP 1]));
+                o.f = P.f;
+                o.df = P.df;
+                if hasddf
+                    assert(hasdddf);
+                    assert(isa(P.ddf,'function_handle'));
+                    assert(isa(P.dddf,'function_handle'));
+                    assert(all(size(P.ddf(randVec)) == [nP 1]));
+                    assert(all(size(P.dddf(randVec)) == [nP 1]));
+                    o.ddf = P.ddf;
+                    o.dddf = P.dddf;
+                else
+                    assert(~hasdddf);
+                    o.ddf = [];
+                    o.dddf = [];
+                end
             end
             
+            %% Verify f, df, ddf, dddf
+            % TODO
+            
             %% Update the transformation Tx + y
-            n = length(o.ub);
-            o.T = sparse(nP, n);
+            o.T = sparse(nP, o.n);
             o.T(:,1:nP) = speye(nP);
+            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
             o.y = zeros(nP, 1);
             
-            %% Update the center cache
-            o.centerCache = [];
+            %% Simplify the polytope
+            if o.opts.runSimplify
+                o.simplify();
+            else
+                o.reorder();
+            end
             
-            %% Set the options
-            defaults.removeFixedVariablesTol = 1e-8;
-            defaults.scaleLP = true;
+            %% Find an initial point
+            if ~isempty(P.center)
+                o.center = P.center;
+            elseif ~isempty(o.center)
+                o.opts.weightedBarrier = false;
+                o.center = analytic_center(o.A, o.b, o, o.opts, o.barrier.center);
+            end
             
-            if ~exist('opts', 'var'), opts = struct; end
-            o.opts = setDefault(opts, defaults);
+            %% Give Warning for Unbounded Polytope
+            w = o.estimate_width(o.center);
+            if (max(w) > 1e10)
+                warning('Hamiltonian:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
+            end
+            
+            %% Compute the initial weight for weighted barrier
+            if opts.weightedBarrier
+                o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
+                o.barrier.extraHessian = o.opts.extraHessian;
+                o.opts.weightedBarrier = true;
+                o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
+            end
         end
         
-        function n = get.n(o)
-            % compute the dimension of the polytope
-            n = size(o.A,2);
+        function w = estimate_width(o, x)
+            % Compute the width of the Dikin ellipse of the polytope:
+            % w_i = sqrt(ei' H^{-1/2} (I - P) H^(-1/2} ei)
+            
+            solver = Solver(o.A, 'doubledouble');
+            if nargin == 1
+                hess = ones(size(o.A,2), 1);
+            else
+                hess = o.hessian(x);
+            end
+            solver.setScale(1./hess);
+            tau = solver.leverageScoreComplement();
+            w = sqrt(tau./hess)+eps;
         end
         
-        function changed = rescale(o)
+        function simplify(o)
+            o.rescale();
+            o.split_dense_cols(o.opts.splitDenseCols);
+            o.reorder();
+            nTmp = +Inf;
+            o.remove_dependent_rows();
+            o.remove_fixed_variables();
+            
+            while o.n < nTmp
+                nTmp = o.n;
+                o.extract_collapsed_variables();
+                o.remove_dependent_rows();
+                o.remove_fixed_variables();
+                
+            end
+            o.reorder();
+        end
+        
+        function grad = gradient(o, x)
+            grad = o.barrier.gradient(x);
+            
+            if ~isempty(o.df)
+                if isfloat(o.df)
+                    grad = grad + o.T' * o.df;
+                else
+                    grad = grad + o.T' * o.df(o.T * x + o.y);
+                end
+            end 
+        end
+        
+        function h = hessian(o, x)
+            h = o.barrier.hessian(x);
+            
+            if ~isempty(o.ddf)
+                if isfloat(o.ddf)
+                    h = h + o.T2' * o.ddf;
+                else
+                    h = h + o.T2' * o.ddf(o.T * x + o.y);
+                end
+            end
+        end
+    end
+    
+    methods (Access = private)
+        function o = append_map(o, S, z)
+            % Perform a change of variables
+            % from the representation {Tx+y : x in P} to
+            % {Tx+y, x = Sw+z : Sw+z in P}
+            % (internal use only)
+            
+            % WARNING: This does not handle the ub and lb changes
+            % It only update A, T and y
+            if nargin < 3, z = zeros(size(S,1),1); end
+            
+            o.b = o.b - o.A * z;
+            o.A = o.A * S;
+            o.y = o.y + o.T * z;
+            o.T = o.T * S;
+            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+        end
+        
+        function rescale(o)
             % Rescale the problem so it is in a better numerical form.
             
             % do not rescale if A has zero or one contraints/variables
-            if min(size(o.A))<=1, return; end
-
-            [cscale,rscale] = gmscale(o.A,0,0.9);
-            changed = any(cscale ~= 1) || all(rscale ~= 1);
-            if ~changed, return; end
+            if min(size(o.A)) <= 1, return; end
             
-            o.A = spdiag(1./rscale)*o.A;
+            [cscale,rscale] = gmscale(o.A, 0, 0.9);
+            o.A = spdiag(1./rscale) * o.A;
             o.b = o.b./rscale;
-            o.lb = o.lb .* cscale;
-            o.ub = o.ub .* cscale;
-            o.appendMap(spdiag(1./cscale));
+            o.barrier.update(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
+            o.append_map(spdiag(1./cscale));
         end
         
-        function changed = removeFixedVariables(o)
+        function remove_fixed_variables(o)
             % Remove fixed variables implied by Ax = b
-            
             tol = o.opts.removeFixedVariablesTol;
-
-            % remove zero rows
-            zeroRows = full(sum(o.A~=0, 2))==0;
-            o.A = o.A(~zeroRows,:);
-            o.b = o.b(~zeroRows);
-
-            % compute the width of each variables
-            % if the width < tol, we consider it as fixed variables
-            JLdim = ceil(3 * log(1+o.n));
-            JLdir = randn(size(o.A,2),JLdim) ./ sqrt(JLdim);
-            so = LinearSystemSolver(o.A);
-            so.Prepare(speye(size(o.A,2)));
-            d = JLdir - o.A' * so.Solve(o.A * JLdir);
-            d = sqrt(sum(d.^2, 2));
-            x = o.A' * so.Solve(o.b);
-            fixedVars = find(d < tol);
-            fixedVals = x(fixedVars);
-            changed = ~isempty(fixedVars) || ~isempty(zeroRows);
-            if isempty(fixedVars), return; end
+            
+            % If the width < tol, we consider it as fixed variables
+            d = o.estimate_width();
+            solver = Solver(o.A, 'doubledouble');
+            solver.setScale(ones(size(o.A,2),1));
+            x = o.A'*solver.solve(o.b);
+            x(abs(x) < 1e-8) = 0; 
+            fixedVars = (d < tol*(1+abs(x)));
             
             % remove all fixed variables
             S = speye(o.n);
-            w = zeros(o.n,1);
-            w(fixedVars) = fixedVals;
-            fixedVarFlags = zeros(o.n,1);
-            fixedVarFlags(fixedVars) = 1;
-            S = S(:,~fixedVarFlags);
-            o.appendMap(S, w);
-            o.lb = o.lb(~fixedVarFlags);
-            o.ub = o.ub(~fixedVarFlags);
+            o.append_map(S(:,~fixedVars), x.*fixedVars);
+            o.barrier.update(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
+            if ~isempty(o.center)
+                o.center = o.center(~fixedVars);
+            end
+            o.n = length(o.barrier.lb);
         end
         
-        function changed = reorder(o)
+        function reorder(o)
             % Reorder vertices such that cholesky has better sparsity pattern
             
             % compute the cost of chol decomposition
-            function s = CholCost(H, P)
+            function s = cholCost(H, P)
                 count = symbfact(H(P,P));
                 s = sum(count.^2);
             end
@@ -187,13 +343,9 @@ classdef Polytope < handle
             m = size(o.A,1);
             H = o.A * o.A' + spdiag(ones(m,1));
             
-            p_dissect = dissect(H);
-            s_dissect = CholCost(H, p_dissect);
+            p_dissect = dissect(H); p_amd = amd(H);
             
-            p_amd = amd(H);
-            s_amd = CholCost(H, p_amd);
-            
-            if (s_dissect < s_amd)
+            if (cholCost(H, p_dissect) < cholCost(H, p_amd))
                 p = p_dissect;
             else
                 p = p_amd;
@@ -202,174 +354,83 @@ classdef Polytope < handle
             [~, Q] = etree(H(p,p));
             p = p(Q);
             
-            changed = ~all(p == 1:m);
-            if ~changed, return; end
-            
-            o.A = o.A(p,:);
-            o.b = o.b(p);
+            o.A = o.A(p,:); o.b = o.b(p);
         end
         
-        function changed = removeDepRows(o)
+        function remove_dependent_rows(o)
             % Remove redundant rows in A
             
-            I = detectIndepRows(o.A);
-            changed = (size(I,1) ~= size(o.A,1));
-            if ~changed, return; end
+            % With zero row, diag(L) does not indicate dependent rows
+            % correctly. So, we remove zero row first.
+            zeroRows = full(sum(o.A~=0, 2))==0;
+            o.A = o.A(~zeroRows,:); o.b = o.b(~zeroRows);
+            
+            solver = Solver(o.A, 'doubledouble');
+            solver.setScale(ones(size(o.A,2),1))
+            dL = solver.diagL();
+            I = find((dL > 1e-12) .* (dL < 1e+64));
+            
+            if size(I,1) == size(o.A,1)
+                return; % This is important for empty matrix
+            end
             
             o.A = o.A(I, :);
             o.b = o.b(I);
         end
         
-        function changed = extractCollapsedVariables(o)
+        function extract_collapsed_variables(o)
             % Extract collapsed variables and move it to constraints
-            
-            f = TwoSidedBarrier(o.lb, o.ub);
-            [c, Ac, bc] = analyticCenter(o.A, o.b, f);
-            o.centerCache = c;
-            
-            changed = (size(Ac,1) > 0);
-            if ~changed, return; end
+            o.opts.weightedBarrier = false;
+            [o.center, Ac, bc] = analytic_center(o.A, o.b, o, o.opts, o.center);
             
             % update the A and b
             o.A = [Ac; o.A];
             o.b = [bc; o.b];
         end
         
-        function changed = splitDenseCols(o, maxNZ)
+        function split_dense_cols(o, maxNZ)
             % Rewrite P so that each cols has no more than maxNZ non-zeros
             
-            changed = false;
             if isempty(o.A) || size(o.A,1) <= maxNZ, return; end
             
             % return the original P if it is too dense
             if (nnz(o.A) > maxNZ * size(o.A,1))
                 return;
             end
-
-            A = o.A;
-            b = o.b;
-            ub = o.ub;
-            lb = o.lb;
-            nzCounts = full(sum(A~=0,1));
+            
+            A_ = o.A;
+            nzCounts = full(sum(A_~=0,1));
+            lb = o.barrier.lb; ub = o.barrier.ub;
             while max(nzCounts)>maxNZ
-                [m,n] = size(A);
+                [m_,n_] = size(A_);
                 badCols = find(nzCounts > maxNZ);
                 numBadCols = length(badCols);
-                newA = spalloc(m, numBadCols, sum(nzCounts));
-
-                counter = 1;
-                for i = badCols
-                  nzIndices = find(A(:,i));
-                  midpoint = nzIndices(floor(length(nzIndices)/2));
-                  last = nzIndices(end);
-                  newA(midpoint+1:last, counter) = A(midpoint+1:last,i);
-                  A(midpoint+1:last,i) = 0;
-                  counter = counter+1;
+                
+                newA = cell(numBadCols, 1);
+                for j = 1:numBadCols
+                    i = badCols(j);
+                    nzIndices = find(A_(:,i));
+                    midpoint = nzIndices(floor(length(nzIndices)/2));
+                    last = nzIndices(end);
+                    newA{j} = [zeros(midpoint,1);A_(midpoint+1:last,i);zeros(m_-last,1)];
+                    A_(midpoint+1:last,i) = 0;
                 end
-
-                A = [A newA];
-                A = [A; sparse(numBadCols, n) -speye(numBadCols,numBadCols)];
-                b = [b; zeros(numBadCols,1)];
-                A(m+1:m+numBadCols,badCols) = speye(numBadCols,numBadCols);
-                ub = [ub; ub(badCols)];
+                
+                A_ = horzcat(A_, newA{:});
+                A_ = [A_; sparse(numBadCols, n_) -speye(numBadCols,numBadCols)];
+                A_(m_+1:m_+numBadCols,badCols) = speye(numBadCols,numBadCols);
+                o.b = [o.b; zeros(numBadCols,1)];
                 lb = [lb; lb(badCols)];
-
-                nzCounts = full(sum(A~=0,1));
+                ub = [ub; ub(badCols)];
+                
+                nzCounts = full(sum(A_~=0,1));
             end
             
-            changed = (length(ub) > o.n);
-            if ~changed, return; end
-            
-            o.T = o.T * [speye(o.n) sparse(o.n, length(ub)-o.n)];
-            o.A = A;
-            o.b = b;
-            o.ub = ub;
-            o.lb = lb;
-        end
-        
-        function w = estimateWidth(o)
-            % Compute the width of the Dikin ellipse of the polytope:
-            % w_i = sqrt(ei' H^{-1/2} (I - P) H^(-1/2} ei)
-            % WARNING: This function is not accurate if the polytope is unbounded
-        
-            x = o.center; A = o.A;
-            f = TwoSidedBarrier(o.lb, o.ub);
-            f.SetExtraHessian(1e-20 * ones(size(x,1),1));
-            Hinv = f.HessianInv(x);
-            HinvSqrt = f.SqrtHessianInv(x);
-            
-            JLsize = ceil(3 * log(1+o.n));
-            JLdir = randn(o.n, JLsize) ./ sqrt(JLsize);
-            z = LinearSystemSolve(A, A * (HinvSqrt * JLdir), Hinv);
-            w = HinvSqrt * JLdir - Hinv * (A' * z);
-            w = sqrt(sum(w.^2, 2));
-        end
-        
-        function c = get.center(o)
-            % computer the analytic center of the polytope
-            
-            if ~isempty(o.centerCache)
-                c = o.centerCache;
-            else
-                f = TwoSidedBarrier(o.lb, o.ub);
-                c = analyticCenter(o.A, o.b, f);
-                o.centerCache = c;
-            end
-        end
-        
-        % Whenever the polytope is changed, the cache is deleted.
-        function set.A(o,A)
-            o.A = A;
-            o.centerCache = [];
-        end
-        
-        function set.b(o,b)
-            o.b = b;
-            o.centerCache = [];
-        end
-        
-        function set.lb(o,lb)
-            o.lb = lb;
-            o.centerCache = [];
-        end
-        
-        function set.ub(o,ub)
-            o.ub = ub;
-            o.centerCache = [];
-        end
-        
-        function simplify(o)
-            % Runs all appropriate preprocessings
-            
-            if o.opts.scaleLP, o.rescale();end
-            o.splitDenseCols(30);
-            o.reorder();
-            n = +Inf;
-            while o.n < n
-                n = o.n;
-                o.removeDepRows();
-                o.extractCollapsedVariables();
-                o.removeFixedVariables();
-            end
-            o.reorder();
-        end
-    end
-    
-    methods (Access = private)
-        function o = appendMap(o, S, z)
-            % Perform a change of variables
-            % from the representation {Tx+y : x in P} to 
-            % {Tx+y, x = Sw+z : Sw+z in P}
-            %
-            % WARNING: This does not handle the ub and lb changes
-            % It only update A, T and y
-            
-            if ~exist('z', 'var'), z = zeros(size(S,1),1); end
-            
-            o.b = o.b - o.A * z;
-            o.A = o.A * S;
-            o.y = o.y + o.T * z;
-            o.T = o.T * S;
+            o.T = [o.T sparse(size(o.T,1), length(ub)-size(o.T,2))];
+            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.A = A_;
+            o.n = length(lb);
+            o.barrier.update(lb, ub);
         end
     end
 end

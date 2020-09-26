@@ -1,8 +1,7 @@
 addpath(genpath(fullfile('code')));
-addpath(fullfile('utils'));
 
-addpath(fullfile('tests'));
-addpath(fullfile('tests','problems'));
+addpath(fullfile('test'));
+addpath(fullfile('test','problems'));
 
-warning('off', 'MATLAB:nearlySingularMatrix');
-warning('off', 'MATLAB:singularMatrix');
+%warning('off', 'MATLAB:nearlySingularMatrix');
+%warning('off', 'MATLAB:singularMatrix');
