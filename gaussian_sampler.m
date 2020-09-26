@@ -6,8 +6,8 @@ initSampler
 
 %% Form the problem P
 %name = 'metabolic/Recon3';
-name = 'basic/box@10000';
-%name = 'netlib/etamacro';
+%name = 'basic/box@10000';
+name = 'netlib/etamacro';
 P = loadProblem(name);
 % special handling for netlib instances
 if contains(name,'netlib/')
@@ -19,8 +19,6 @@ if contains(name,'netlib/')
     P.lb = max(P.lb, -2 * max(abs(x)));
     gc = x;
 end
-%uniform sampling in P
-%P.df = [];
 %Gaussian sampling in P; first set center gc to be zero if feasible, else
 %to some feasible point; user can set gc to any feasible point in P.
 if (all(P.lb <= 0) & all(0 <= P.ub) & all(P.beq == 0) & all(0 <= P.bineq))
@@ -47,10 +45,4 @@ opts.outputFunc = @(tag, msg, varargin) {fprintf(fid, msg, varargin{:}); fprintf
 N = 100;
 o = sample(P, N, opts);
 
-%profile report
-if isempty(P.df)
-    [o.pVal] = uniformtest(o.samples, P, o.dim,  struct('toPlot', 1));
-end
 fclose(fid);
-fprintf('See log.text for full output; samples in o.samples\n');
-fprintf('Mixing Time: %fs,  Effective Sample Size: %i\n', o.mixingTime, round(min(o.ess)));

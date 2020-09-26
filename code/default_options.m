@@ -38,7 +38,8 @@ function opts = default_options()
     opts.checkESSIter = 100;
     opts.maxTime = 3600;
     opts.maxStep = +Inf;
-    opts.minStepSize = 0.001;
+%   opts.minStepSize = 0.001;
+    opts.minStepSize = 1e-10;
     opts.minAcceptedSteps = 100;
     
     % Restart/Shrink Condition
