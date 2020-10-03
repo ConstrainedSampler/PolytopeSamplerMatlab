@@ -24,3 +24,13 @@ else
 end
 
 P = Polytope.standardize(P);
+
+% netlib LP are not bounded
+if contains(name, 'netlib/')
+    x = linprog(P.df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
+    threshold = P.df' * x + abs(P.df)' * abs(x);
+    P.Aineq = [P.Aineq; P.df'];
+    P.bineq = [P.bineq; threshold];
+    P.ub = min(P.ub, 2 * max(abs(x)));
+    P.lb = max(P.lb, -2 * max(abs(x)));
+end

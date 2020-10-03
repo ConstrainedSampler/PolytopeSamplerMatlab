@@ -2,14 +2,9 @@ function l = problemList(options)
 if ~exist('options', 'var'), options = []; end
 problems = {};
 
-% Read files with size within the range (bytes)
-default.fileSizeLimit = [0 +Inf];
-
-%default.folders = {'basic', 'metabolic', 'metabolic2', 'netlib'};
+default.fileSizeLimit = [0 +Inf]; % in bytes
 default.folders = {'basic', 'metabolic', 'netlib'};
-
 default.ignoreProblems = {};
-
 default.generateDimensions = [10 100 1000 10000];
 
 o = setfield(default, options);

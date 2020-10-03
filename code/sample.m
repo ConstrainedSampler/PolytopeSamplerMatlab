@@ -246,16 +246,14 @@ end
 %	[o.pVal] = uniformtest(o.samples, problem, o.dim,  struct('toPlot', 1));
 %end
 
-if isempty(P.df)
-    if opts.debugMode == true
-        s = o.ham.T * o.samples + o.ham.y;
-        [o.pVal] = uniformtest(s, problem, o.dim,  struct('toPlot', 1));
-    else
-    [o.pVal] = uniformtest(o.samples, problem, o.dim,  struct('toPlot', 1));
-    end
-end
+% if isempty(P.df)
+%     if opts.debugMode == true
+%         s = o.ham.T * o.samples + o.ham.y;
+%         [o.pVal] = uniformtest(s, problem, o.dim,  struct('toPlot', 1));
+%     else
+%         [o.pVal] = uniformtest(o.samples, problem, o.dim,  struct('toPlot', 1));
+%     end
+% end
 
-fprintf('See log.text for full output; samples in o.samples\n');
-fprintf('Mixing Time: %fs,  Effective Sample Size: %i\n', o.mixingTime, round(min(o.ess)));
-
-opts.outputFunc('sample:end', 'Done.\n', o.i);
+opts.outputFunc('sample:end', 'See log.text for full output; samples in o.samples\n');
+opts.outputFunc('sample:end', 'Mixing Time: %fs,  Effective Sample Size: %i\n', o.mixingTime, round(min(o.ess)));

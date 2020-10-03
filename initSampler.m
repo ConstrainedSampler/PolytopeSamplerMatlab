@@ -1,4 +1,4 @@
 addpath(genpath(fullfile('code')));
 
-addpath(fullfile('test'));
-addpath(fullfile('test','problems'));
+addpath(fullfile('coverage'));
+addpath(fullfile('coverage', 'problems'));

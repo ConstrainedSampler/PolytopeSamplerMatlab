@@ -225,7 +225,7 @@ classdef Polytope < handle
             % w_i = sqrt(ei' H^{-1/2} (I - P) H^(-1/2} ei)
             
             solver = Solver(o.A, 'doubledouble');
-            if nargin == 1
+            if nargin == 1 || isempty(x)
                 hess = ones(size(o.A,2), 1);
             else
                 hess = o.hessian(x);

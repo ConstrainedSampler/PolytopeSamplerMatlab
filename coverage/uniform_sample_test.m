@@ -1,8 +1,7 @@
-function sample_test
-clc
+function uniform_sample_test
 s = TestSuite;
 s.randomSeed = 123456;
-s.nCores = 4;
+s.nCores = +Inf;
 s.debug = 0;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
@@ -13,7 +12,7 @@ s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
 s.printFormat.nStep = '10i';
 s.printFormat.avgAcc = '15.3e';
-s.testFunc = @(name) test_func(name, 100);
+s.testFunc = @(name) test_func(name, 200);
 s.test();
 end
 
@@ -26,24 +25,6 @@ warning('off', 'stats:adtest:NotEnoughData');
 
 % load the problem and truncate it to make it bounded
 P = loadProblem(name);
-gc = zeros(size(P.lb,1),1); % Gaussian center
-if contains(name,'netlib/')
-    x = linprog(P.df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
-    threshold = P.df' * x + abs(P.df)' * abs(x);
-    P.Aineq = [P.Aineq; P.df'];
-    P.bineq = [P.bineq; threshold];
-    P.ub = min(P.ub, 2 * max(abs(x)));
-    P.lb = max(P.lb, -2 * max(abs(x)));
-    gc = x;
-end
-%uniform sampling in P
-%P.df = 0;
-%Gaussian sampling in P
-P.f = @(x)(x-gc)'*(x-gc);
-P.df = @(x)2*(x-gc);
-P.ddf = @(x)2*ones(size(P.lb,1),1);
-P.dddf = @(x)zeros(size(P.lb,1),1);
-
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
 P_opts.debugMode = true;
@@ -63,7 +44,7 @@ o.avgAcc = sample_out.averageAccuracy;
 s = sample_out.ham.T * sample_out.samples + sample_out.ham.y;
 
 o.pVal=0.5;
-%[o.pVal] = uniformtest(s, P, sample_out.dim);
+[o.pVal] = uniformtest(s, P, sample_out.dim);
 o.mixing = sample_out.mixingTime;
 
 if (o.mixing < 500 && o.pVal > 0.005 && o.pVal < 0.995)
