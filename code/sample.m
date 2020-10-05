@@ -243,4 +243,4 @@ if ~opts.rawOutput
 end
 
 opts.outputFunc('sample:end', 'See log.text for full output; samples in o.samples\n');
-opts.outputFunc('sample:end', 'Mixing Time (in iter): %fs,  Effective Sample Size: %i\n', o.mixingIter, round(min(o.ess)));
+opts.outputFunc('sample:end', 'Mixing Time (in iter): %f,  Effective Sample Size: %i\n', o.mixingIter, round(min(o.ess)));

@@ -5,6 +5,6 @@ function P = tv_ball(dim)
     P.beq = zeros(dim-1,1);
     P.lb = -ones(2*dim-1,1);
     P.ub = ones(2*dim-1,1);
-    P.lb(1:(dim-1)) = -dim;
-    P.ub(1:(dim-1)) = dim;
+    P.lb(1:dim) = -dim;
+    P.ub(1:dim) = dim;
 end

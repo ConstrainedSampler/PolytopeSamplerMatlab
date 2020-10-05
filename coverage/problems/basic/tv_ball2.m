@@ -5,6 +5,6 @@ function P = tv_ball2(dim)
     P.beq = zeros(dim-1,1);
     P.lb = -ones(2*dim-1,1);
     P.ub = ones(2*dim-1,1);
-    P.lb(1:(dim-1)) = -100000*sqrt(dim);
-    P.ub(1:(dim-1)) = 100000*sqrt(dim);
+    P.lb(1:dim) = -10*sqrt(dim);
+    P.ub(1:dim) = 10*sqrt(dim);
 end
