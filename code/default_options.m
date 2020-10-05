@@ -32,14 +32,13 @@ function opts = default_options()
     % Output Options
     opts.recordsPerIndependentSample = 10;
     opts.outputFunc = @(tag, msg, varargin) fprintf(msg, varargin{:});
-    opts.debugMode = false;
+    opts.rawOutput = false;
     
     % Terminiation Condition
     opts.checkESSIter = 100;
     opts.maxTime = 3600;
     opts.maxStep = +Inf;
-%   opts.minStepSize = 0.001;
-    opts.minStepSize = 1e-10;
+    opts.minStepSize = 0.001;
     opts.minAcceptedSteps = 100;
     
     % Restart/Shrink Condition

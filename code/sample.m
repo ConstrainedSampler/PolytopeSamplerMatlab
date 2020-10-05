@@ -8,8 +8,7 @@ function o = sample(problem, N, opts)
 %Output:
 % o - a structure containing the following properties:
 %   samples - a dim x N vector containing all the samples
-%   sampler - the subroutine to do one step
-%   mixingTime - number of records per "independent" sample based on min(ess)
+%   mixingRecord - number of records per "independent" sample based on min(ess)
 %   prepareTime - time to pre-process the input (including find analytic
 %   center, remove redundant constraints, reduce dimension etc.)
 %   sampleTime - total sampling time in seconds
@@ -17,7 +16,13 @@ function o = sample(problem, N, opts)
 t = tic;
 
 %% Initialize parameters
+if (nargin == 2)
+    opts = default_options();
+end
+
 o = struct;
+o.problem = problem;
+o.opts = opts;
 o.iterPerRecord = 1;
 o.checkESSIter = opts.checkESSIter;
 o.samples = [];
@@ -34,23 +39,20 @@ r = rng;
 o.seed = r.Seed;
 
 %% Presolve
-P = Polytope(problem, opts);
-ham = Hamiltonian(P, opts);
+polytope = Polytope(problem, opts);
+ham = Hamiltonian(polytope, opts);
 o.prepareTime = toc(t);
-o.dim = ham.n - size(P.A,1);
+o.polytope = polytope;
 o.ham = ham;
 o.nSamples = 0;
 
 %% Presolve
 o.consecutiveBadStep = 0;
 o.i = 1;
-o.x = P.center;
+o.x = polytope.center;
 o.v = o.ham.resample(o.x, zeros(size(o.x)), 0);
 o.acceptedSteps = 0;
-
-if opts.debugMode
-    o.averageAccuracy = 0;
-end
+o.averageLinearSystemAccuracy = 0;
 
 if opts.dynamicBound
     o.bound = max(abs(o.x), 1);
@@ -187,20 +189,20 @@ while true
         len = size(o.samples,2);
         o.ess = effective_sample_size(o.samples);
         o.nSamples = min(o.ess);
-        o.mixingTime = o.i / o.nSamples;
+        o.mixingIter = o.i / o.nSamples;
         
         % thinning
         if opts.recordsPerIndependentSample < Inf
             h = max((len / o.nSamples) / opts.recordsPerIndependentSample, 1);
             idx = ceil(h*(1:floor(len / h))) + (len - ceil(h * floor(len / h)));
             o.samples = o.samples(:, idx);
-            o.iterPerRecord = ceil(o.mixingTime / (opts.recordsPerIndependentSample * 2));
+            o.iterPerRecord = ceil(o.mixingIter / (opts.recordsPerIndependentSample * 2));
             if o.nSamples < N/2
                 o.iterPerRecord = ceil(o.iterPerRecord / 2);
             end
         end
         
-        if o.nSamples > N
+        if o.nSamples >= N
             o.done = true;
             break;
         end
@@ -215,18 +217,15 @@ while true
             N_target = min(N_target, opts.freezeMCMCAfterSamples);
         end
         
-        o.checkESSIter = o.i + (N_target - o.nSamples) * o.mixingTime;
+        o.checkESSIter = o.i + (N_target - o.nSamples) * o.mixingIter;
     end
     
-    if o.i > opts.maxStep
+    if o.i >= opts.maxStep
         warning('iter %i: opts.maxStep reached.\n', o.i, opts.maxStep);
         break;
     end
 
-    if opts.debugMode
-        o.averageAccuracy = 0.99 * o.averageAccuracy + 0.01 * ham.accuracy;
-    end
-    
+    o.averageLinearSystemAccuracy = 0.99 * o.averageLinearSystemAccuracy + 0.01 * ham.accuracy;
     o.i = o.i + 1;
 end
 o.sampleTime = toc(t) - o.prepareTime;
@@ -235,25 +234,13 @@ opts.outputFunc('sample:end', 'Finished sampling. Now doing postprocessing.\n', 
 if (o.done == false)
     o.ess = effective_sample_size(o.samples);
     o.nSamples = min(o.ess);
-    o.mixingTime = size(o.samples,2) / o.nSamples * o.iterPerRecord;
+    o.mixingIter = size(o.samples,2) / o.nSamples * o.iterPerRecord;
 end
+o.mixingRecord = size(o.samples,2) / o.nSamples;
 
-if ~opts.debugMode
-    o.samples = P.T * o.samples + P.y;
+if ~opts.rawOutput
+    o.samples = polytope.T * o.samples + polytope.y;
 end
-
-%if isempty(P.df)
-%	[o.pVal] = uniformtest(o.samples, problem, o.dim,  struct('toPlot', 1));
-%end
-
-% if isempty(P.df)
-%     if opts.debugMode == true
-%         s = o.ham.T * o.samples + o.ham.y;
-%         [o.pVal] = uniformtest(s, problem, o.dim,  struct('toPlot', 1));
-%     else
-%         [o.pVal] = uniformtest(o.samples, problem, o.dim,  struct('toPlot', 1));
-%     end
-% end
 
 opts.outputFunc('sample:end', 'See log.text for full output; samples in o.samples\n');
-opts.outputFunc('sample:end', 'Mixing Time: %fs,  Effective Sample Size: %i\n', o.mixingTime, round(min(o.ess)));
+opts.outputFunc('sample:end', 'Mixing Time (in iter): %fs,  Effective Sample Size: %i\n', o.mixingIter, round(min(o.ess)));

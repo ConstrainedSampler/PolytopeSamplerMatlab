@@ -2,7 +2,7 @@ function uniform_sample_test
 s = TestSuite;
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 0;
+s.debug = 1;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
@@ -43,7 +43,6 @@ o.avgAcc = sample_out.averageAccuracy;
 % diagnosis
 s = sample_out.ham.T * sample_out.samples + sample_out.ham.y;
 
-o.pVal=0.5;
 [o.pVal] = uniformtest(s, P, sample_out.dim);
 o.mixing = sample_out.mixingTime;
 

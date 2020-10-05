@@ -10,6 +10,6 @@ function [y] = thin_samples(x)
 % y - a dim x ess(x) vector.
 
 ess = effective_sample_size(x);
-gap = ceil(size(x,2)/min(ess));
-y = x(:, ceil(size(x,2)*0.1):gap:end);
+gap = size(x,2)/min(ess);
+y = x(:, ceil(gap:gap:size(x,2)));
 end

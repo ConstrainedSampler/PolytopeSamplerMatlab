@@ -1,6 +1,6 @@
 Quick readme: 
 
-Start with demo_template.m, uniform_sampler.m or gaussian_sampler.m and modify the problem to the one you want to sample; each file has one or more examples. 
+See demo.m on how to generate random samples from polytope
 
 In more detail:
 
@@ -20,11 +20,10 @@ If the first derivative is a function handle, then the function and its second a
 
 This core function sample.m is supplemented by functions to: 
 1. find an initial feasible point 
-2. test convergence of the sampling algorithm with Effective Sample Size, and a uniformity test (for uniform sampling).
+2. test convergence of the sampling algorithm with Effective Sample Size.
 
-Before using sample, we set up the parameters for sampling via a struct called opts with the following properties:
+You can set up the parameters for sampling via a struct called opts. Here are some parameters you may want to set:
 
-                        nSketch: JL dimension for fast leverage score computation (0 means no JL).
                      outputFunc: [function_handle]
                         maxTime: 86400 (max sampling time in seconds)
                         maxStep: 300000 (maximum number of steps)
@@ -33,11 +32,9 @@ Before using sample, we set up the parameters for sampling via a struct called o
 The output of sample is a struct "o" with fields including:
 
                 samples: dim x #steps
-	    prepareTime: pre-processing time 
-                    dim: dimension of instance
+            prepareTime: pre-processing time
                nSamples: Number of nearly independent samples
                     ess: Effective Sample Size in each coordinate
-             mixingTime: estimated #steps to mix
              sampleTime: total sampling time
 
 

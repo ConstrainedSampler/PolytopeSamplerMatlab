@@ -1,3 +1,4 @@
 *.asv
-log.txt
+*.log
 paper/
+coverage/problems/extra/
