@@ -51,3 +51,13 @@ s = thin_samples(o.samples);
 figure;
 histogram(s(:))
 title('Gaussian distribution restricted on [-1,1]');
+
+%% Example 4: Read a polytope according to Cobra format
+load('coverage\Recon1.mat')
+P = struct;
+P.lb = model.lb;
+P.ub = model.ub;
+P.S = model.b;
+o = sample(P, 100);
+[pVal] = uniformtest(o, struct('toPlot', true));
+

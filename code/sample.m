@@ -16,7 +16,7 @@ function o = sample(problem, N, opts)
 t = tic;
 
 %% Initialize parameters
-if (nargin == 2)
+if (nargin <= 2)
     opts = default_options();
 end
 
