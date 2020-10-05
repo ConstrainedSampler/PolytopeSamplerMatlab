@@ -1,6 +1,6 @@
 Quick readme: 
 
-See demo.m on how to generate random samples from polytope
+See demo.m on how to generate random samples from a polytope
 
 In more detail:
 
