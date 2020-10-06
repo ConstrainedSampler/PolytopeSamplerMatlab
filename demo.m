@@ -31,11 +31,11 @@ o = sample(P, +Inf, opts);
 s = thin_samples(o.samples);
 figure;
 histogram(s(1,:))
-title('marginal of first coordinate of Birkhoff polytope');
+title('Marginal of first coordinate of Birkhoff polytope');
 fclose(fid);
 drawnow()
 
-%% Example 3: Sample Gaussian distribution restricted on a hypercube
+%% Example 3: Sample Gaussian distribution restricted to a hypercube
 P = struct; d = 100;
 P.lb = -ones(d,1);
 P.ub = ones(d,1);
@@ -50,7 +50,7 @@ o = sample(P, +Inf, opts);
 s = thin_samples(o.samples);
 figure;
 histogram(s(:))
-title('Gaussian distribution restricted on [-1,1]');
+title('Marginal of Gaussian distribution restricted to hypercube');
 
 %% Example 4: Read a polytope according to Cobra format
 load('coverage\Recon1.mat')
