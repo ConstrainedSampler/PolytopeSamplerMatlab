@@ -1,6 +1,6 @@
 Quick readme: 
 
-See demo.m on how to generate random samples from a polytope
+See demo.m on how to generate random samples, with several examples.
 
 In more detail:
 
@@ -20,7 +20,7 @@ If the first derivative is a function handle, then the function and its second a
 
 This core function sample.m is supplemented by functions to: 
 1. find an initial feasible point 
-2. test convergence of the sampling algorithm with Effective Sample Size.
+2. test convergence of the sampling algorithm with Effective Sample Size and a uniformity test (if target is uniform).
 
 You can set up the parameters for sampling via a struct called opts. Here are some parameters you may want to set:
 
