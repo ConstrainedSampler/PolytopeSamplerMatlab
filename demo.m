@@ -57,7 +57,8 @@ load('coverage\Recon1.mat')
 P = struct;
 P.lb = model.lb;
 P.ub = model.ub;
-P.S = model.b;
+P.b = model.b;
+P.A = model.S;
 o = sample(P, 100);
 [pVal] = uniformtest(o, struct('toPlot', true));
 
