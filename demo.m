@@ -14,7 +14,7 @@ title('distribution of l1 norm of simplex');
 drawnow()
 
 %% Example 2: Sample uniform from Birkhoff polytope
-P = struct; d = 500;
+P = struct; d = 10;
 P.lb = zeros(d^2,1);
 P.Aeq = sparse(2*d,d^2);
 P.beq = ones(2*d,1);
@@ -24,7 +24,7 @@ for i=1:d
 end
 
 opts = default_options();
-opts.maxTime = 10; % Stop after 10 sec
+opts.maxTime = 20; % Stop in 20 sec
 fid = fopen('demo.log','w');
 opts.outputFunc = @(tag, msg, varargin) {fprintf(fid, msg, varargin{:}); fprintf(msg, varargin{:})}; % output the results to the screen and demo.log
 o = sample(P, +Inf, opts);
