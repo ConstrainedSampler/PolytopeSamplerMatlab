@@ -10,7 +10,9 @@
 #include "triple_products.h"
 #include "cs_SIMD.h"
 
-template <typename Tv, typename Ti>
+namespace env = MexEnvironment;
+
+template <typename Tv, typename Ti>        
 struct CSolver
 {	// parameters
     cs<Tv,Ti> *A;
@@ -179,7 +181,7 @@ struct CSolver
     }
 };
 
-namespace env = MexEnvironment;
+
 
 int main()
 {

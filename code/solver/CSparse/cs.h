@@ -94,6 +94,21 @@ namespace CSparse {
 		return ((*ok) ? pnew : p);             /* return original p if failure */
 	}
     
+    ///* allocate a sparse matrix (triplet form or compressed-column form) */
+    template <typename Tv, typename Ti>
+    cs<Tv, Ti>* cs_spalloc(Ti m, Ti n, Ti nzmax, bool values, bool triplet)
+	{
+		cs<Tv, Ti>* A = cs_calloc<cs<Tv, Ti>>(1);    /* allocate the cs struct */
+		if (!A) return (NULL);                 /* out of memory */
+		A->m = m;                              /* define dimensions and nzmax */
+		A->n = n;
+		A->nzmax = nzmax = CS_MAX(nzmax, 1);
+		A->p = cs_malloc<Ti>(triplet ? nzmax : n + 1);
+		A->i = cs_malloc<Ti>(nzmax);
+		A->x = values ? cs_malloc<Tv>(nzmax) : NULL;
+		return ((!A->p || !A->i || (values && !A->x)) ? cs_spfree(A) : A);
+	}
+    
     template <typename Tv_, typename Ti_, typename Tv, typename Ti>
     cs<Tv, Ti>* cs_copy(const cs<Tv_, Ti_>* A_)
     {
@@ -115,20 +130,6 @@ namespace CSparse {
         return A;
     }
     
-	///* allocate a sparse matrix (triplet form or compressed-column form) */
-	template <typename Tv, typename Ti>
-	cs<Tv, Ti>* cs_spalloc(Ti m, Ti n, Ti nzmax, bool values, bool triplet)
-	{
-		cs<Tv, Ti>* A = cs_calloc<cs<Tv, Ti>>(1);    /* allocate the cs struct */
-		if (!A) return (NULL);                 /* out of memory */
-		A->m = m;                              /* define dimensions and nzmax */
-		A->n = n;
-		A->nzmax = nzmax = CS_MAX(nzmax, 1);
-		A->p = cs_malloc<Ti>(triplet ? nzmax : n + 1);
-		A->i = cs_malloc<Ti>(nzmax);
-		A->x = values ? cs_malloc<Tv>(nzmax) : NULL;
-		return ((!A->p || !A->i || (values && !A->x)) ? cs_spfree(A) : A);
-	}
 
 	/* change the max # of entries sparse matrix */
 	template <typename Tv, typename Ti>

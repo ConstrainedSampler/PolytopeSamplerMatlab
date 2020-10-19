@@ -1,6 +1,12 @@
 #ifndef MEX_UTILS_H_
 #define MEX_UTILS_H_
 
+template<typename Tin, typename Tout>
+inline Tout convert(Tin x)
+{
+    return Tout(x);
+}
+
 #include "mex.h"
 #include <cstdint>
 #include <typeinfo>
@@ -225,11 +231,7 @@ namespace MexEnvironment
     }
 };
 
-template<typename Tin, typename Tout>
-inline Tout convert(Tin x)
-{
-    return Tout(x);
-}
+
 
 int main();
 
