@@ -9,6 +9,7 @@ inline Tout convert(Tin x)
 
 #include "mex.h"
 #include <cstdint>
+#include <type_traits>
 #include <typeinfo>
 #include "CSparse/cs.h"
 using namespace CSparse;

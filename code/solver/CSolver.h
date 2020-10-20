@@ -1,6 +1,8 @@
 #ifndef CSOLVER_H_
 #define CSOLVER_H_
 
+#include <string.h>
+#include <random>
 #include <random>
 #include "CSparse/cs_transpose.h"
 #include "CSparse/cs_gaxpy.h"

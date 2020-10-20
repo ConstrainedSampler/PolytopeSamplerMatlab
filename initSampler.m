@@ -25,6 +25,12 @@ if ((nargin == 1 && recompile) || exist('CSolver_double') ~= 3)
         mex_no_fmath = ...
             'mex -R2018a -silent -O CFLAGS="$CFLAGS -march=native"';
         oext = '.o';
+    elseif (contains(compiler, 'g++'))
+        mex_with_fmath = ...
+            'mex -R2018a -silent -O CFLAGS="$CFLAGS -march=native -ffast-math"';
+        mex_no_fmath = ...
+            'mex -R2018a -silent -O CFLAGS="$CFLAGS -march=native"';
+        oext = '.o';
     end
     obj = '%path/qd/util%oext %path/qd/bits%oext %path/qd/dd_real%oext %path/qd/dd_const%oext %path/qd/qd_real%oext %path/qd/qd_const%oext';
 
