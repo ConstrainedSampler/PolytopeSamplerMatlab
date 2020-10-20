@@ -31,6 +31,8 @@ if ((nargin == 1 && recompile) || exist('CSolver_double') ~= 3)
         mex_no_fmath = ...
             'mex -R2018a -silent -O CFLAGS="$CFLAGS -march=native"';
         oext = '.o';
+    else
+        error('Currently, we only support MSVCPP, Clang++ or g++ as the compiler.');
     end
     obj = '%path/qd/util%oext %path/qd/bits%oext %path/qd/dd_real%oext %path/qd/dd_const%oext %path/qd/qd_real%oext %path/qd/qd_const%oext';
 
