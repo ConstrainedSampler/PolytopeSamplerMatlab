@@ -53,7 +53,7 @@ histogram(s(:))
 title('Marginal of Gaussian distribution restricted to hypercube');
 
 %% Example 4: Read a polytope according to Cobra format
-load('coverage\Recon1.mat')
+load('coverage/Recon1.mat')
 P = struct;
 P.lb = model.lb;
 P.ub = model.ub;
