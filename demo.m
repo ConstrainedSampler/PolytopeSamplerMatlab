@@ -27,14 +27,11 @@ end
 
 opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
-fid = fopen('demo.log','w');
-opts.outputFunc = @(tag, msg, varargin) {fprintf(fid, msg, varargin{:}); fprintf(msg, varargin{:})}; % output the results to the screen and demo.log
 o = sample(P, +Inf, opts);
 s = thin_samples(o.samples);
 figure;
 histogram(s(1,:))
 title('Marginal of first coordinate of Birkhoff polytope');
-fclose(fid);
 drawnow()
 
 %% Example 3: Sample Gaussian distribution restricted to a hypercube
