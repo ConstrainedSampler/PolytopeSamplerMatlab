@@ -31,7 +31,8 @@ function opts = default_options()
     
     % Output Options
     opts.recordsPerIndependentSample = 10;
-    opts.outputFunc = @(tag, msg, varargin) fprintf(msg, varargin{:});
+    opts.outputFunc = @(tag, msg, varargin) 0;
+    opts.progressBar = true;
     opts.rawOutput = false;
     
     % Terminiation Condition

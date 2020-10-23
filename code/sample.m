@@ -63,6 +63,7 @@ if opts.weightedBarrier
     o.averageLSC = zeros(size(o.x));
 end
 
+t = tic;
 ham.opts.checkPrecision = true;
 while true
     % v step
@@ -223,6 +224,19 @@ while true
     if o.i >= opts.maxStep
         warning('iter %i: opts.maxStep reached.\n', o.i, opts.maxStep);
         break;
+    end
+    
+    if opts.progressBar
+        if o.i == 1
+            progress_bar(N);
+        end
+        
+        if o.nSamples > 0
+            time_spent = toc(t) + o.prepareTime;
+            time_remain = (N - o.nSamples) * (toc(t) / o.nSamples);
+            acc_prob = 1-o.rejectSinceShrink/o.iterSinceShrink;
+            progress_bar(N, floor(o.nSamples), time_spent, time_remain, acc_prob, o.stepSize);
+        end
     end
 
     o.averageLinearSystemAccuracy = 0.99 * o.averageLinearSystemAccuracy + 0.01 * ham.accuracy;
