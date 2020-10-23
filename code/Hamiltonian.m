@@ -106,6 +106,7 @@ classdef Hamiltonian < handle
         
         % Resample v = g^{1/2} * N(0, I_d)
         function v = resample(o, x, v, momentum)
+            if nargin == 3, momentum = 0; end
             o.move(x);
             sqrtHess = sqrt(o.hess);
             v = sqrt(momentum) * v + sqrt(1-momentum) * (sqrtHess .* randn(o.n,1));
