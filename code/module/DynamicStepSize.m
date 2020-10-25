@@ -1,8 +1,7 @@
-classdef DynamicStepSize
+classdef DynamicStepSize < handle
     properties
         sampler
         opts
-        prerequisites = {}
         
         consecutiveBadStep
         iterSinceShrink
@@ -22,8 +21,11 @@ classdef DynamicStepSize
             o.iterSinceShrink = 0;
             o.rejectSinceShrink = 0;
             o.ODEStepSinceShrink = 0;
-            o.stableX = sampler.x;
-            o.stableV = sampler.v;
+        end
+        
+        function o = initialize(o)
+            o.stableX = o.sampler.x;
+            o.stableV = o.sampler.v;
         end
         
         function o = propose(o)
@@ -75,22 +77,19 @@ classdef DynamicStepSize
                     s.stepSize = s.stepSize / o.opts.shrinkFactor;
                     s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
                     
-                    s.outputFunc('DynamicStepSize:step', 'Iter %i: Step shrinks to h = %f\n', s.i, s.stepSize, shrink);
+                    s.log('DynamicStepSize:step', 'Step shrinks to h = %f\n', s.stepSize, shrink);
 
                     if s.stepSize < o.opts.minStepSize
-                        s.outputFunc('warning', 'Iter %i: Algorithm fails to converge even with step size h = %f.\n', s.i, s.stepSize);
-                        if o.opts.storeFailureState
-                            save
-                        end
+                        s.log('warning', 'Algorithm fails to converge even with step size h = %f.\n', s.stepSize);
                         s.terminate = true;
                     end
                 end
 
                 o.iterSinceShrink = o.iterSinceShrink + 1;
             elseif o.consecutiveBadStep > o.opts.maxConsecutiveBadStep
-                s.x = s.avgX;
+                s.x = mean(s.samples, 2);
                 s.v = s.ham.resample(s.x, zeros(size(s.x)), 0);
-                s.outputFunc('DynamicStepSize:step', 'Iter %i: Sampler reset to the center gravity due to consecutive bad steps.\n', s.i);
+                s.log('DynamicStepSize:step', 'Sampler reset to the center gravity due to consecutive bad steps.\n');
                 
                 o.iterSinceShrink = 0;
                 o.rejectSinceShrink = 0;

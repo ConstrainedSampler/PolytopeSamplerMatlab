@@ -1,18 +1,19 @@
 % TODO: Understand why I need to multiply by n.
 % Maybe we check TV ball to see what is the smallest I can do
 
-classdef DynamicRegularizer
+classdef DynamicRegularizer < handle
     properties
         sampler
-        prerequisites = {}
-        
         bound
     end
     
     methods
         function o = DynamicRegularizer(sampler)
             o.sampler = sampler;
-            o.setBound(max(abs(sampler.x), 1));
+        end
+        
+        function o = initialize(o)
+            o.setBound(max(abs(o.sampler.x), 1));
         end
         
         function o = propose(o)
@@ -35,7 +36,7 @@ classdef DynamicRegularizer
                 if ~isempty(idx)
                     s.ham.barrier.extraHessian = 0.25./(s.ham.n * o.bound.*o.bound);
                     s.v = s.ham.resample(s.x, zeros(size(s.x)));
-                    s.outputFunc('DynamicWeight:setBound', 'iter %i: the bound of %i coordinates are changed significantly.\n', s.i, length(idx));
+                    s.log('DynamicWeight:setBound', 'The bound of %i coordinates are changed significantly.\n', length(idx));
                 end
             end
         end

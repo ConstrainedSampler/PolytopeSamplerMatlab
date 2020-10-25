@@ -23,7 +23,7 @@ else
     error(['Problem ' name ' does not exists']);
 end
 
-P = Polytope.standardize(P);
+P = standardize_problem(P);
 
 % netlib LP are not bounded
 if contains(name, 'netlib/')

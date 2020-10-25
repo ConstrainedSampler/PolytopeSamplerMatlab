@@ -1,24 +1,42 @@
 function opts = default_options()
-%Defaults set to no JL, and no weightedBarrier
     opts = struct;
     opts.seed = 'shuffle';
+    opts.maxTime = 3600;
+    opts.maxStep = +Inf;
     opts.nSketch = 0;
-    opts.adaptiveStepSize = true;
-    opts.weightedBarrier = false;
-    opts.dynamicBound = true;
+    opts.maxODEStep = 20;
+    opts.effectiveStepSize = 1;
+    opts.initalStepSize = 0.2;
+    opts.loggingFunc = @(tag, msg) 0;%fprintf('%s', msg);
+    opts.freezeMCMCAfterSamples = 100;
+    
+    
+    opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar', 'DebugLogger'};
+    
+    opts.DynamicStepSize = struct;
+    opts.DynamicStepSize.maxConsecutiveBadStep = 10;
+    opts.DynamicStepSize.targetODEStep = 10;
+    opts.DynamicStepSize.shrinkFactor = 1.1;
+    opts.DynamicStepSize.minStepSize = 0.001;
+    
+    opts.MixingTimeEstimator = struct;
+    opts.MixingTimeEstimator.startIter = 100;
+    opts.MixingTimeEstimator.iterMultiplier = 2;
+    
+    opts.SampleStorage = struct;
+    opts.SampleStorage.recordsPerIndependentSample = 5;
+    opts.SampleStorage.minNumRecords = 100;
+    opts.SampleStorage.rawOutput = false;
+    
+    
+    
+    % Other options
     opts.crudeSolverThreshold = 1e-6;
     opts.extraHessian = 1e-20;
     
     
-    % Algorithm Options
-    opts.effectiveStepSize = 1;
-    opts.shrinkFactor = 1.1;
-    opts.initalStepSize = 0.2;
-    
     % ODE Options
     opts.odeMethod = @implicit_midpoint;
-    opts.maxODEStep = 20;
-    opts.targetODEStep = 10;
     opts.implicitTol = 1e-5;
     
     % Presolve Options
@@ -28,21 +46,4 @@ function opts = default_options()
     opts.ipmDistanceTol = 1e-8; % we assume a constraint is tight if dist to constraint < distanceTol
     opts.splitDenseCols = 30;
     opts.removeFixedVariablesTol = 1e-12;
-    
-    % Output Options
-    opts.recordsPerIndependentSample = 10;
-    opts.outputFunc = @(tag, msg, varargin) 0;
-    opts.progressBar = true;
-    opts.rawOutput = false;
-    
-    % Terminiation Condition
-    opts.checkESSIter = 100;
-    opts.maxTime = 3600;
-    opts.maxStep = +Inf;
-    opts.minStepSize = 0.001;
-    opts.minAcceptedSteps = 100;
-    
-    % Restart/Shrink Condition
-    opts.consecutiveBadStepLimit = 10;
-    opts.freezeMCMCAfterSamples = 100;
 end

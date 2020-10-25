@@ -13,11 +13,10 @@
 %     end
 
 % 
-% classdef DynamicWeight
+% classdef DynamicWeight < handle
 %     properties
 %         sampler
 %         opts
-%         prerequisites = {}
 %     end
 %     
 %     methods
@@ -25,6 +24,10 @@
 %             o.sampler = sampler;
 %             o.opts = sampler.opts.DynamicWeight;
 %         end
+%         
+%         function o = initialize(o)
+%         end
+%
 %         
 %         function o = propose(o)
 %             

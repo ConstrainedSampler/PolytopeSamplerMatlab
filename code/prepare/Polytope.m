@@ -10,71 +10,17 @@ classdef Polytope < handle
         df
         ddf
         dddf
+        originalProblem
         
         opts
         
         % private variables
-        ham
         center      % analytic center
         n
         
         % TODO: Assumed each row of T contains at most 1 non-zero
         T2          % used for computing ddf, dddf
         T3
-    end
-    
-    methods(Static)
-        function P = standardize(P)
-            if nonempty(P, 'Aeq')
-                n = size(P.Aeq,2);
-            elseif nonempty(P, 'Aineq')
-                n = size(P.Aineq,2);
-            elseif nonempty(P, 'lb')
-                n = length(P.lb);
-            elseif nonempty(P, 'ub')
-                n = length(P.ub);
-            elseif nonempty(P, 'center')
-                n = length(P.center);
-            else
-                error('Polytope:standardize', 'For unconstrained problems, an initial point "center" is required.');
-            end
-            
-            %% Set all non-existence fields
-            if ~nonempty(P, 'Aeq')
-                P.Aeq = sparse(zeros(0, n));
-            end
-            
-            if ~nonempty(P, 'beq')
-                P.beq = zeros(size(P.Aeq, 1), 1);
-            end
-            
-            if ~nonempty(P, 'Aineq')
-                P.Aineq = sparse(zeros(0, n));
-            end
-            
-            if ~nonempty(P, 'bineq')
-                P.bineq = zeros(size(P.Aineq, 1), 1);
-            end
-            
-            if ~nonempty(P, 'lb')
-                P.lb = -Inf * ones(n, 1);
-            end
-            
-            if ~nonempty(P,'ub')
-                P.ub = Inf * ones(n,1);
-            end
-            
-            if ~nonempty(P,'center')
-                P.center = [];
-            end
-            
-            %% Check the input dimensions
-            assert(all(size(P.Aineq) == [length(P.bineq) n]));
-            assert(all(size(P.Aeq) == [length(P.beq) n]));
-            assert(all(size(P.lb) == [n 1]));
-            assert(all(size(P.ub) == [n 1]));
-            assert(all(P.lb <= P.ub));
-        end
     end
     
     methods
@@ -111,7 +57,12 @@ classdef Polytope < handle
             %   ddf is optional. Providing ddf improves the mixing time.
             %   When ddf is provided, both ddf and dddf must be provided as
             %   a function handle.
-            P = Polytope.standardize(P);
+            if isa(P, 'Polytope')
+                o = P;
+                return;
+            end
+            P = standardize_problem(P);
+            o.originalProblem = P;
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
             nP = size(P.Aeq, 2);
@@ -120,6 +71,10 @@ classdef Polytope < handle
             
             o.A = [P.Aeq sparse(nEq, nIneq); P.Aineq speye(nIneq)];
             o.b = [P.beq; P.bineq];
+            o.f = P.f;
+            o.df = P.df;
+            o.ddf = P.ddf;
+            o.dddf = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
@@ -138,51 +93,6 @@ classdef Polytope < handle
             end
             o.barrier = TwoSidedBarrier(lb, ub);
             o.barrier.extraHessian = o.opts.extraHessian;
-            
-            %% Store f, df, ddf, dddf
-            randVec = randn(nP, 1);
-            hasf = isfield(P, 'f') && ~isempty(P.f);
-            hasdf = isfield(P, 'df') && ~isempty(P.df);
-            hasddf = isfield(P, 'ddf') && ~isempty(P.ddf);
-            hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
-            
-            % Case 1: df is empty
-            if ~hasdf
-                assert(~hasf && ~hasddf && ~hasdddf);
-                o.f = [];
-                o.df = [];
-                o.ddf = [];
-                o.dddf = [];
-            elseif isfloat(P.df) % Case 2: df is a vector
-                assert(all(size(P.df) == [nP 1]));
-                o.f = @(x) sum(x.*P.df);
-                o.df = @(x) P.df;
-                o.ddf = [];
-                o.dddf = [];
-            elseif isa(P.df, 'function_handle') % Case 3: df is handle
-                assert(hasf);
-                assert(isa(P.f,'function_handle'));
-                assert(all(size(P.f(randVec)) == [1 1]));
-                assert(all(size(P.df(randVec)) == [nP 1]));
-                o.f = P.f;
-                o.df = P.df;
-                if hasddf
-                    assert(hasdddf);
-                    assert(isa(P.ddf,'function_handle'));
-                    assert(isa(P.dddf,'function_handle'));
-                    assert(all(size(P.ddf(randVec)) == [nP 1]));
-                    assert(all(size(P.dddf(randVec)) == [nP 1]));
-                    o.ddf = P.ddf;
-                    o.dddf = P.dddf;
-                else
-                    assert(~hasdddf);
-                    o.ddf = [];
-                    o.dddf = [];
-                end
-            end
-            
-            %% Verify f, df, ddf, dddf
-            % TODO
             
             %% Update the transformation Tx + y
             o.T = sparse(nP, o.n);
@@ -212,12 +122,12 @@ classdef Polytope < handle
             end
             
             %% Compute the initial weight for weighted barrier
-            if opts.weightedBarrier
-                o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
-                o.barrier.extraHessian = o.opts.extraHessian;
-                o.opts.weightedBarrier = true;
-                o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
-            end
+%             if opts.weightedBarrier
+%                 o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
+%                 o.barrier.extraHessian = o.opts.extraHessian;
+%                 o.opts.weightedBarrier = true;
+%                 o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
+%             end
         end
         
         function w = estimate_width(o, x)

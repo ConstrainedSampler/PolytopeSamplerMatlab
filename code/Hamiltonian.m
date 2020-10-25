@@ -68,11 +68,9 @@ classdef Hamiltonian < handle
             if ~isempty(o.df) && isfloat(o.df)
                 o.df = o.T'*o.df;
             end
-            
             if ~isempty(o.ddf) && isfloat(o.ddf)
                 o.ddf = o.T2'*o.ddf;
             end
-            
             if ~isempty(o.dddf) && isfloat(o.dddf)
                 o.dddf = o.T3'*o.dddf;
             end

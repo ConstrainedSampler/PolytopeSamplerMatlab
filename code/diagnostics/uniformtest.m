@@ -17,13 +17,8 @@ if ~exist('opts', 'var'), opts = struct; end
 defaults.toPlot = false;
 defaults.tol = 1e-8;
 opts = setfield(defaults, opts);
-P = Polytope.standardize(o.problem);
+P = o.polytope.originalProblem;
 x = thin_samples(o.samples);
-
-if o.opts.rawOutput
-    x = o.polytope.T * x + o.polytope.y;
-end
-
 dim = o.polytope.n - size(o.polytope.A, 1);
 
 if size(x,2) < 6
@@ -59,17 +54,18 @@ for i=1:K
     unif_vals(i) = (1 / (1+r))^dim;
 end
 
+try
+    [~,pVal] = adtest(norminv(unif_vals));
+catch
+    pVal = 1;
+end
+
 if opts.toPlot
     figure;
     cdfplot(unif_vals);
     hold on;
     plot(0:0.01:1, 0:0.01:1, '.')
-end
-
-try
-    [~,pVal] = adtest(norminv(unif_vals));
-catch
-    pVal = 1;
+    title(sprintf('Empirical CDF of the radial distribution (pval = %.4f)', pVal))
 end
 
 end
