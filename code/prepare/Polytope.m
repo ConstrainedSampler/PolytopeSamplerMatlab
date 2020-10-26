@@ -6,10 +6,10 @@ classdef Polytope < handle
         T	% transformation T of the domain
         y	% shift of the domain
         barrier % TwoSidedBarrier
-        f_	% the objective function and its derivatives in the original space
-        df_
-        ddf_
-        dddf_
+        f	% the objective function and its derivatives in the original space
+        df
+        ddf
+        dddf
         originalProblem
         
         opts
@@ -19,8 +19,7 @@ classdef Polytope < handle
         n
         
         % TODO: Assumed each row of T contains at most 1 non-zero
-        T2          % used for computing ddf, dddf
-        T3
+        T2          % used for computing ddf
     end
     
     methods
@@ -71,10 +70,10 @@ classdef Polytope < handle
             
             o.A = [P.Aeq sparse(nEq, nIneq); P.Aineq speye(nIneq)];
             o.b = [P.beq; P.bineq];
-            o.f_ = P.f;
-            o.df_ = P.df;
-            o.ddf_ = P.ddf;
-            o.dddf_ = P.dddf;
+            o.f = P.f;
+            o.df = P.df;
+            o.ddf = P.ddf;
+            o.dddf = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
@@ -97,7 +96,7 @@ classdef Polytope < handle
             %% Update the transformation Tx + y
             o.T = sparse(nP, o.n);
             o.T(:,1:nP) = speye(nP);
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
             o.y = zeros(nP, 1);
             
             %% Simplify the polytope
@@ -164,51 +163,11 @@ classdef Polytope < handle
         end
         
         function grad = gradient(o, x)
-            grad = o.barrier.gradient(x);
-            
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    grad = grad + o.T' * o.df;
-                else
-                    grad = grad + o.T' * o.df(o.T * x + o.y);
-                end
-            end 
+            grad = o.barrier.gradient(x) + o.T' * o.df(o.T * x + o.y);
         end
         
         function h = hessian(o, x)
-            h = o.barrier.hessian(x);
-            
-            if ~isempty(o.ddf)
-                if isfloat(o.ddf)
-                    h = h + o.T2' * o.ddf;
-                else
-                    h = h + o.T2' * o.ddf(o.T * x + o.y);
-                end
-            end
-        end
-        
-        function v = df(o, x)
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    v = o.T' * o.df;
-                else
-                    v = o.T' * o.df(o.T * x + o.y);
-                end
-            else
-                v = zeros(size(o.T, 2), 1);
-            end 
-        end
-        
-        function v = ddf(o, x)
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    v = o.T' * o.df;
-                else
-                    v = o.T' * o.df(o.T * x + o.y);
-                end
-            else
-                v = zeros(size(o.T, 2), 1);
-            end 
+            h = o.barrier.hessian(x) + o.T2' * o.ddf(o.T * x + o.y);
         end
     end
     
@@ -227,7 +186,7 @@ classdef Polytope < handle
             o.A = o.A * S;
             o.y = o.y + o.T * z;
             o.T = o.T * S;
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
         end
         
         function rescale(o)
@@ -361,7 +320,7 @@ classdef Polytope < handle
             end
             
             o.T = [o.T sparse(size(o.T,1), length(ub)-size(o.T,2))];
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
             o.A = A_;
             o.n = length(lb);
             o.barrier.update(lb, ub);

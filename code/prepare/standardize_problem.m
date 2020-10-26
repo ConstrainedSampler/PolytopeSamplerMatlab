@@ -50,18 +50,20 @@ hasddf = isfield(P, 'ddf') && ~isempty(P.ddf);
 hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
 
 % Case 1: df is empty
+zeroFunc = @(x) 0;
+zerosVecFunc = @(x) zeros(n,1);
 if ~hasdf
     assert(~hasf && ~hasddf && ~hasdddf);
-    P.f = [];
-    P.df = [];
-    P.ddf = [];
-    P.dddf = [];
+    P.f = zeroFunc;
+    P.df = zerosVecFunc;
+    P.ddf = zerosVecFunc;
+    P.dddf = zerosVecFunc;
 elseif isfloat(P.df) % Case 2: df is a vector
     assert(all(size(P.df) == [n 1]));
-    P.f = P.df;
-    P.df = P.df;
-    P.ddf = [];
-    P.dddf = [];
+    P.f = @(x) sum(P.df'*x);
+    P.df = @(x) P.df;
+    P.ddf = zerosVecFunc;
+    P.dddf = zerosVecFunc;
 elseif isa(P.df, 'function_handle') % Case 3: df is handle
     assert(hasf);
     assert(isa(P.f,'function_handle'));
@@ -79,8 +81,8 @@ elseif isa(P.df, 'function_handle') % Case 3: df is handle
         P.dddf = P.dddf;
     else
         assert(~hasdddf);
-        P.ddf = [];
-        P.dddf = [];
+        P.ddf = zerosVecFunc;
+        P.dddf = zerosVecFunc;
     end
     
     %% Verify f, df, ddf, dddf

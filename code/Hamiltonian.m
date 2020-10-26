@@ -115,14 +115,7 @@ classdef Hamiltonian < handle
             o.prepare(x)
             K = 0.5 * v' * o.DK(x, v);
             U = 0.5 * (o.solver.logdet() + sum(log(o.hess)));
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    U = U + o.df' * x;
-                else
-                    U = U + o.f(o.T * x + o.y);
-                end
-            end
-            
+            U = U + o.f(o.T * x + o.y);
             E = U + K;
         end
         
@@ -131,17 +124,9 @@ classdef Hamiltonian < handle
             if ~o.prepared || isempty(o.last_dUdx)
                 o.prepare(x);
                 o.last_lsc = o.solver.leverageScoreComplement(o.opts.nSketch);
-                o.last_dUdx = o.barrier.tensor(x) .* o.last_lsc ./ (2*o.hess);
+                o.last_dUdx = o.barrier.tensor(x) .* o.last_lsc ./ (2*o.hess) + o.T' * o.df(o.T * x + o.y);
             end
             dUdx = o.last_dUdx;
-            
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    dUdx = dUdx + o.df;
-                else
-                    dUdx = dUdx + o.T' * o.df(o.T * x + o.y);
-                end
-            end
         end
         
         % Project to Ax = b
@@ -198,17 +183,7 @@ classdef Hamiltonian < handle
             if ~forceUpdate && all(o.x == x), return; end
             
             o.x = x;
-            h = o.barrier.hessian(x);
-            
-            if ~isempty(o.ddf)
-                if isfloat(o.ddf)
-                    h = h + o.ddf;
-                else
-                    h = h + o.T2' * o.ddf(o.T * x + o.y);
-                end
-            end
-            
-            o.hess = h;
+            o.hess = o.barrier.hessian(x) + o.T2' * o.ddf(o.T * x + o.y);
             o.prepared = false;
         end
     end

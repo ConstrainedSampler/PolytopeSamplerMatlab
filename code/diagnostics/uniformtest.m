@@ -33,7 +33,7 @@ end
 p = x(:,1);
 x = x(:,2:end);
 
-if isfield(P, 'df') && ~isempty(P.df)
+if sum(abs(P.df(x(:,end)))) ~= 0
     warning('PolytopeSampler:uniformtest:nonUniform', 'The density of the distribution should be uniform, namely, df = 0.');
 end
 
