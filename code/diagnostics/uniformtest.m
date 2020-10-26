@@ -14,6 +14,11 @@ function [pVal] = uniformtest(o, opts)
 %        distribution r^(dim-1). We use Anderson-Darling and Kolmogorov-Smirnov tests here.
 
 if ~exist('opts', 'var'), opts = struct; end
+
+if ~exist('adtest') || ~exist('kstest')
+    error('This function requires the Statistics and Machine Learning Toolbox');
+end
+
 defaults.toPlot = false;
 defaults.tol = 1e-8;
 opts = setfield(defaults, opts);
@@ -55,10 +60,19 @@ for i=1:K
 end
 
 try
-    [~,pVal] = adtest(norminv(unif_vals));
+    [~,pVal1] = adtest(norminv(unif_vals));
 catch
-    pVal = 1;
+    pVal1 = 1;
 end
+
+try
+    [~,pVal2] = kstest(norminv(unif_vals));
+catch
+    pVal2 = 1;
+end
+
+z = pVal1 * pVal2;
+pVal = z - z * log(z);
 
 if opts.toPlot
     figure;

@@ -11,7 +11,7 @@ function opts = default_options()
     opts.freezeMCMCAfterSamples = 100;
     
     
-    opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar', 'DebugLogger'};
+    opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
     
     opts.DynamicStepSize = struct;
     opts.DynamicStepSize.maxConsecutiveBadStep = 10;

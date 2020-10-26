@@ -25,6 +25,7 @@ s.opts = opts;
 r = rng(opts.seed, 'simdTwister');
 s.seed = r.Seed;
 s.N = N;
+opts.module = unique([{'MixingTimeEstimator', 'SampleStorage'}, opts.module], 'stable');
 for i = 1:length(opts.module)
     s.module{end+1} = feval(opts.module{i}, s);
 end
