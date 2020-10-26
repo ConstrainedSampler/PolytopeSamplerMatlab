@@ -1,16 +1,30 @@
 function opts = default_options()
     opts = struct;
     opts.seed = 'shuffle';
+    
+    % Linear System Options
+    opts.nSketch = 0;
+    opts.crudeSolverThreshold = 1e-6;
+    opts.extraHessian = 1e-20;
+    
+    % ODE Options
+    opts.odeMethod = @implicit_midpoint;
+    opts.maxODEStep = 20;
+    opts.implicitTol = 1e-5;
+    
+    % Termination Conditions
     opts.maxTime = 3600;
     opts.maxStep = +Inf;
-    opts.nSketch = 0;
-    opts.maxODEStep = 20;
+    
+    % HMC options
     opts.effectiveStepSize = 1;
     opts.initalStepSize = 0.2;
-    opts.loggingFunc = @(tag, msg) 0;%fprintf('%s', msg);
     opts.freezeMCMCAfterSamples = 100;
     
+    % Logging options
+    opts.loggingFunc = @(tag, msg) 0;%fprintf('%s', msg);
     
+    % Module options
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
     
     opts.DynamicStepSize = struct;
@@ -27,17 +41,6 @@ function opts = default_options()
     opts.SampleStorage.recordsPerIndependentSample = 5;
     opts.SampleStorage.minNumRecords = 100;
     opts.SampleStorage.rawOutput = false;
-    
-    
-    
-    % Other options
-    opts.crudeSolverThreshold = 1e-6;
-    opts.extraHessian = 1e-20;
-    
-    
-    % ODE Options
-    opts.odeMethod = @implicit_midpoint;
-    opts.implicitTol = 1e-5;
     
     % Presolve Options
     opts.runSimplify = true;
