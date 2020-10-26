@@ -1,3 +1,7 @@
+>> Only have one way to call df, ddf, dddf so that it is easier
+>>> those functions repeated too many times
+>>> Why dddf is never used?
+
 >> Run the larger test on polytope test and sample test
 >> update the README.md
 >> Seems the Example 1 has pval problem. I neeed to run multiple test to make sure 

@@ -2,7 +2,7 @@ function presolve_test
 s = TestSuite;
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 0;
+s.debug = 1;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
@@ -33,7 +33,6 @@ end
 % first solve it using matlab LP solver
 P_opts = default_options();
 P_opts.runSimplify = false;
-P_opts.outputFunc = @(tag, msg, varargin) {};
 P0 = Polytope(P, P_opts);
 df = P0.df(zeros(P0.n, 1));
 

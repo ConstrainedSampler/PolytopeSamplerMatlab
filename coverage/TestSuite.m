@@ -35,7 +35,7 @@ classdef TestSuite < handle
         function test(o)
             output = TableDisplay(o.printFormat);
             output.tag = 'TestSuite';
-            output.outputFunc = @(tag, msg, varargin) TestSuite.output(tag, msg, varargin{:});
+            output.loggingFunc = @(tag, msg, varargin) TestSuite.output(tag, msg, varargin{:});
             output.header();
             % TODO
             l = problemList(o.problemFilter);

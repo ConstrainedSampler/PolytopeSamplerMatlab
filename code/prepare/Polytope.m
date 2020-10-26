@@ -5,11 +5,11 @@ classdef Polytope < handle
         b   % constraint vector b
         T	% transformation T of the domain
         y	% shift of the domain
-        f	% the objective function and its derivatives in the original space
         barrier % TwoSidedBarrier
-        df
-        ddf
-        dddf
+        f_	% the objective function and its derivatives in the original space
+        df_
+        ddf_
+        dddf_
         originalProblem
         
         opts
@@ -71,10 +71,10 @@ classdef Polytope < handle
             
             o.A = [P.Aeq sparse(nEq, nIneq); P.Aineq speye(nIneq)];
             o.b = [P.beq; P.bineq];
-            o.f = P.f;
-            o.df = P.df;
-            o.ddf = P.ddf;
-            o.dddf = P.dddf;
+            o.f_ = P.f;
+            o.df_ = P.df;
+            o.ddf_ = P.ddf;
+            o.dddf_ = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
@@ -185,6 +185,30 @@ classdef Polytope < handle
                     h = h + o.T2' * o.ddf(o.T * x + o.y);
                 end
             end
+        end
+        
+        function v = df(o, x)
+            if ~isempty(o.df)
+                if isfloat(o.df)
+                    v = o.T' * o.df;
+                else
+                    v = o.T' * o.df(o.T * x + o.y);
+                end
+            else
+                v = zeros(size(o.T, 2), 1);
+            end 
+        end
+        
+        function v = ddf(o, x)
+            if ~isempty(o.df)
+                if isfloat(o.df)
+                    v = o.T' * o.df;
+                else
+                    v = o.T' * o.df(o.T * x + o.y);
+                end
+            else
+                v = zeros(size(o.T, 2), 1);
+            end 
         end
     end
     

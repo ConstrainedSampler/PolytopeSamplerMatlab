@@ -57,7 +57,7 @@ if ~hasdf
     P.ddf = [];
     P.dddf = [];
 elseif isfloat(P.df) % Case 2: df is a vector
-    assert(all(size(P.df) == [nP 1]));
+    assert(all(size(P.df) == [n 1]));
     P.f = P.df;
     P.df = P.df;
     P.ddf = [];
