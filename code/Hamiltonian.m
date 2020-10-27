@@ -13,7 +13,7 @@ classdef Hamiltonian < handle
         barrier % TwoSidedBarrier
         df
         ddf
-        dddf
+        %dddf
         solver
         crudeSolver
         accSolver
@@ -46,7 +46,7 @@ classdef Hamiltonian < handle
             o.f = P.f;
             o.df = P.df;
             o.ddf = P.ddf;
-            o.dddf = P.dddf;
+            %o.dddf = P.dddf;
             o.opts = opts;
             o.m = m;
             o.n = n;
@@ -63,17 +63,17 @@ classdef Hamiltonian < handle
             o.y = P.y;
             assert(max(full(sum(o.T~=0,2))) <= 1);
             o.T2 = o.T.^2;
-            o.T3 = o.T.*o.T2;
-            
-            if ~isempty(o.df) && isfloat(o.df)
-                o.df = o.T'*o.df;
-            end
-            if ~isempty(o.ddf) && isfloat(o.ddf)
-                o.ddf = o.T2'*o.ddf;
-            end
-            if ~isempty(o.dddf) && isfloat(o.dddf)
-                o.dddf = o.T3'*o.dddf;
-            end
+            %o.T3 = o.T.*o.T2;
+%             
+%             if ~isempty(o.df) && isfloat(o.df)
+%                 o.df = o.T'*o.df;
+%             end
+%             if ~isempty(o.ddf) && isfloat(o.ddf)
+%                 o.ddf = o.T2'*o.ddf;
+%             end
+%             if ~isempty(o.dddf) && isfloat(o.dddf)
+%                 o.dddf = o.T3'*o.dddf;
+%             end
         end
         
         % when we prepare 

@@ -9,7 +9,7 @@ classdef Polytope < handle
         f	% the objective function and its derivatives in the original space
         df
         ddf
-        dddf
+        %dddf
         originalProblem
         
         opts
@@ -44,18 +44,16 @@ classdef Polytope < handle
             %
             % Case 1: df is not defined
             %   f(x) = 0.
-            % In this case, f, ddf, dddf must be empty.
+            % In this case, f, ddf must be empty.
             %
             % Case 2: df is a vector
             %   f_i(x_i) = df_i x_i.
-            % In this case, f, ddf, dddf must be empty.
+            % In this case, f, ddf must be empty.
             %
             % Case 3: df is a function handle
             %   f need to be defined as a function handle.
             %   df need to be the deriative of f
             %   ddf is optional. Providing ddf improves the mixing time.
-            %   When ddf is provided, both ddf and dddf must be provided as
-            %   a function handle.
             if isa(P, 'Polytope')
                 o = P;
                 return;
@@ -73,7 +71,7 @@ classdef Polytope < handle
             o.f = P.f;
             o.df = P.df;
             o.ddf = P.ddf;
-            o.dddf = P.dddf;
+            %o.dddf = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];

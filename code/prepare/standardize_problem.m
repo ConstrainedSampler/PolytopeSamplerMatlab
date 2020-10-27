@@ -47,23 +47,23 @@ randVec = randn(n, 1);
 hasf = isfield(P, 'f') && ~isempty(P.f);
 hasdf = isfield(P, 'df') && ~isempty(P.df);
 hasddf = isfield(P, 'ddf') && ~isempty(P.ddf);
-hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
+%hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
 
 % Case 1: df is empty
 zeroFunc = @(x) 0;
 zerosVecFunc = @(x) zeros(n,1);
 if ~hasdf
-    assert(~hasf && ~hasddf && ~hasdddf);
+    assert(~hasf && ~hasddf);% && ~hasdddf);
     P.f = zeroFunc;
     P.df = zerosVecFunc;
     P.ddf = zerosVecFunc;
-    P.dddf = zerosVecFunc;
+    %P.dddf = zerosVecFunc;
 elseif isfloat(P.df) % Case 2: df is a vector
     assert(all(size(P.df) == [n 1]));
     P.f = @(x) sum(P.df'*x);
     P.df = @(x) P.df;
     P.ddf = zerosVecFunc;
-    P.dddf = zerosVecFunc;
+    %P.dddf = zerosVecFunc;
 elseif isa(P.df, 'function_handle') % Case 3: df is handle
     assert(hasf);
     assert(isa(P.f,'function_handle'));
@@ -72,17 +72,17 @@ elseif isa(P.df, 'function_handle') % Case 3: df is handle
     P.f = P.f;
     P.df = P.df;
     if hasddf
-        assert(hasdddf);
+        %assert(hasdddf);
         assert(isa(P.ddf,'function_handle'));
-        assert(isa(P.dddf,'function_handle'));
+        %assert(isa(P.dddf,'function_handle'));
         assert(all(size(P.ddf(randVec)) == [n 1]));
-        assert(all(size(P.dddf(randVec)) == [n 1]));
+        %assert(all(size(P.dddf(randVec)) == [n 1]));
         P.ddf = P.ddf;
-        P.dddf = P.dddf;
+        %P.dddf = P.dddf;
     else
-        assert(~hasdddf);
+        %assert(~hasdddf);
         P.ddf = zerosVecFunc;
-        P.dddf = zerosVecFunc;
+        %P.dddf = zerosVecFunc;
     end
     
     %% Verify f, df, ddf, dddf

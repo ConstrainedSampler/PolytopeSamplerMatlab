@@ -1,4 +1,3 @@
-> Where is dddf used?
 > Make the log output more useful
 > Run the larger test on polytope test and sample test
 --------------------
