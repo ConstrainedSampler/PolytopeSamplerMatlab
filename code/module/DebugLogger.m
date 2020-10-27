@@ -9,6 +9,7 @@ classdef DebugLogger < handle
             o.sampler = sampler;
             o.startTime = tic();
             sampler.output.acceptedStep = 0;
+            sampler.output.totalStep = 0;
             sampler.output.averageLinearSystemAccuracy = 0;
         end
         
@@ -23,6 +24,7 @@ classdef DebugLogger < handle
         function o = step(o)
             s = o.sampler;
             s.output.acceptedStep = s.output.acceptedStep + s.accept;
+            s.output.totalStep = s.output.totalStep + 1;
             s.output.averageLinearSystemAccuracy = 0.9 * s.output.averageLinearSystemAccuracy + 0.1 * o.sampler.ham.accuracy;
         end
         

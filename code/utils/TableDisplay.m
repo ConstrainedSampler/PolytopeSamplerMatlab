@@ -2,7 +2,7 @@
 classdef TableDisplay < handle
     properties
         format
-        loggingFunc
+        logFunc
         tag
     end
     
@@ -89,7 +89,7 @@ classdef TableDisplay < handle
                 s = strcat(s, sprintf(strcat('%', field.format), item_i), ' ');
             end
             
-            o.loggingFunc(o.tag, [s, newline]);
+            o.logFunc(o.tag, [s, newline]);
         end
         
 
@@ -110,7 +110,7 @@ classdef TableDisplay < handle
             end
             total_length = total_length - 1;
             
-            o.loggingFunc(o.tag, [s, newline, repmat('-', 1, total_length), newline]);
+            o.logFunc(o.tag, [s, newline, repmat('-', 1, total_length), newline]);
         end
     end
 end

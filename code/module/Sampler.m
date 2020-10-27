@@ -49,7 +49,7 @@ classdef Sampler < dynamicprops
             else
                 msg = [msg, sprintf(format)];
             end
-            o.opts.loggingFunc(tag, msg);
+            o.opts.logFunc(tag, msg);
         end
     end
 end

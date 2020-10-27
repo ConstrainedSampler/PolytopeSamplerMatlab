@@ -22,7 +22,7 @@ function opts = default_options()
     opts.freezeMCMCAfterSamples = 100;
     
     % Logging options
-    opts.loggingFunc = @(tag, msg) 0;%fprintf('%s', msg);
+    opts.logFunc = @(tag, msg) 0;%fprintf('%s', msg);
     
     % Module options
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};

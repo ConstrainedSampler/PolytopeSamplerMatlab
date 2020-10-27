@@ -80,6 +80,7 @@ classdef ProgressBar < handle
                 if isnan(s) || isinf(s)
                     o = '         NaN';
                 else
+                    s = max(s,0);
                     second = mod(floor(s),60);
                     minute = mod(floor(s/60),60);
                     hour = mod(floor(s/3600),24);
@@ -89,7 +90,7 @@ classdef ProgressBar < handle
             end
 
             function o = progressString(s, len)
-                s = min(s, 1);
+                s = max(min(s, 1),0);
                 l = round(s*len);
                 o = repmat('#', 1, l);
                 o = [o, repmat(' ', 1, len - l)];

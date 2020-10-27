@@ -1,7 +1,6 @@
-> Make the log output more useful
-> Run the larger test on polytope test and sample test
---------------------
+> Remove all warning to log function
+> has a summary function
+> Write a script run all tests (fast and detailed version)
 > update the README.md
 > Seems the Example 1 has pval problem. I neeed to run multiple test to make sure 
->> Write a script to test this
->> Seems only using adtest is problematic, I should use both. Maybe I should mix them together.
+> Write a script to test this

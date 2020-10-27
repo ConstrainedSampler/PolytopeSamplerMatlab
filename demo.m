@@ -25,14 +25,17 @@ for i=1:d
     P.Aeq(d+i,i:d:d^2)=1;
 end
 
+fid = fopen('demo.log', 'w');
 opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
+opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg); % Output the debug log to demo.log
 o = sample(P, +Inf, opts);
 s = thin_samples(o.samples);
 figure;
 histogram(s(1,:))
 title('Marginal of first coordinate of Birkhoff polytope');
 drawnow()
+fclose(fid);
 
 %% Example 3: Sample Gaussian distribution restricted to a hypercube
 initSampler

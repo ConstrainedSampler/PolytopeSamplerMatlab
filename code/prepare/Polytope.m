@@ -109,6 +109,7 @@ classdef Polytope < handle
                 o.center = P.center;
             elseif ~isempty(o.center)
                 o.opts.weightedBarrier = false;
+                o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
                 o.center = analytic_center(o.A, o.b, o, o.opts, o.barrier.center);
             end
             
@@ -143,6 +144,7 @@ classdef Polytope < handle
         end
         
         function simplify(o)
+            o.opts.logFunc('Polytope:simplify', sprintf('Start simplifying the problem.\nInitially, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
             o.rescale();
             o.split_dense_cols(o.opts.splitDenseCols);
             o.reorder();
@@ -158,6 +160,7 @@ classdef Polytope < handle
                 
             end
             o.reorder();
+            o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
         end
         
         function grad = gradient(o, x)
@@ -211,6 +214,9 @@ classdef Polytope < handle
             x = o.A'*solver.solve(o.b);
             x(abs(x) < 1e-8) = 0; 
             fixedVars = (d < tol*(1+abs(x)));
+            if sum(fixedVars) > 0
+                o.opts.logFunc('Polytope:simplify', sprintf('Removed %i fixed coordinates.\n', sum(fixedVars)));
+            end
             
             % remove all fixed variables
             S = speye(o.n);
@@ -265,6 +271,7 @@ classdef Polytope < handle
                 return; % This is important for empty matrix
             end
             
+            o.opts.logFunc('Polytope:simplify', sprintf('Removed %i redundant constraints.\n', size(o.A,1) - size(I, 1)));
             o.A = o.A(I, :);
             o.b = o.b(I);
         end
@@ -272,6 +279,7 @@ classdef Polytope < handle
         function extract_collapsed_variables(o)
             % Extract collapsed variables and move it to constraints
             o.opts.weightedBarrier = false;
+            o.opts.logFunc('Polytope:simplify', ['Run interior point methods to detect fixed coordinates:' newline]);
             [o.center, Ac, bc] = analytic_center(o.A, o.b, o, o.opts, o.center);
             
             % update the A and b
