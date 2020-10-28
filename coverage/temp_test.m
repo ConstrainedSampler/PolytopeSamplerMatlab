@@ -1,10 +1,10 @@
 initSampler
 
 
-P = loadProblem('netlib/sierra');
+P = loadProblem('basic/tv_ball@100');
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger', 'ProgressBar'};
 sample_out = sample(P, 100, P_opts);
 
 o = {};
