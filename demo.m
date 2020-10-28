@@ -65,7 +65,7 @@ P.lb = model.lb;
 P.ub = model.ub;
 P.b = model.b;
 P.A = model.S;
-o = sample(P, 100);
+o = sample(P, 500);
 [pVal] = uniformtest(o, struct('toPlot', true));
 
 %% Example 5: Brownian bridge

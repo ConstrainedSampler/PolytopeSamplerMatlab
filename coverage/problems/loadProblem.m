@@ -30,6 +30,9 @@ if contains(name, 'netlib/')
     df = P.df(P.lb); % the df for netlib problem is a fixed vector
     x = linprog(df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
     threshold = df' * x + abs(df)' * abs(x);
+	P.f = [];
+	P.df = [];
+	P.ddf = [];
     P.Aineq = [P.Aineq; df'];
     P.bineq = [P.bineq; threshold];
     P.ub = min(P.ub, 2 * max(abs(x)));
