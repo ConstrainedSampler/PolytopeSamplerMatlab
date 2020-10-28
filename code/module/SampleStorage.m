@@ -24,13 +24,13 @@ classdef SampleStorage < handle
                 s.samples(:,end+1) = s.x;
                 
                 len = size(s.samples, 2);
-                nextIterPerRecord = ceil(s.mixingTime / o.opts.recordsPerIndependentSample);
-                if len >= o.opts.minNumRecords && s.iterPerRecord < nextIterPerRecord / 2
+                if len >= o.opts.minNumRecords && 2 * s.iterPerRecord < s.mixingTime / o.opts.recordsPerIndependentSample
                     h = max(s.mixingTime / (o.opts.recordsPerIndependentSample * s.iterPerRecord), 1);
-                    h = min(h, ceil(2 * len/o.opts.minNumRecords));
+                    h = min(h, 2 * len/o.opts.minNumRecords);
+                    h = ceil(h);
                     idx = ceil(h*(1:floor(len / h))) + (len - ceil(h * floor(len / h)));
                     s.samples = s.samples(:, idx);
-                    s.iterPerRecord = nextIterPerRecord;
+                    s.iterPerRecord = s.iterPerRecord * h;
                 end
             end
         end

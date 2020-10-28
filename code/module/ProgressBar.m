@@ -26,7 +26,7 @@ classdef ProgressBar < handle
             end
             
             fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
-            fprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Samples', 'AccRate', 'StepSize', 'MixingTime');
+            fprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Samples', 'AccRate', 'StepSize', 'MixTime');
         end
         
         function o = initialize(o)
@@ -66,10 +66,7 @@ classdef ProgressBar < handle
             end
             
             if (o.sampler.N == Inf)
-                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesFieldLength, 'i | %8.6f | %8.6f | %8.6f');
-                str = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, prob, s.stepSize, s.mixingTime);
-            else
-                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesTextLength, 'i/%', o.nSamplesTextLength, 'i | %8.6f | %8.6f | %8.6f');
+                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesTextLength, 'i/%', o.nSamplesTextLength, 'i | %8.6f | %8.6f | %8.1f');
                 str = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, s.N, prob, s.stepSize, s.mixingTime);
             end
             

@@ -2,7 +2,7 @@ function uniform_sample_test
 s = TestSuite;
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 1;
+s.debug = 0;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
