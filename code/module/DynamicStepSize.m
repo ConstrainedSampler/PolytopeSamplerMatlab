@@ -29,7 +29,7 @@ classdef DynamicStepSize < handle
         end
         
         function o = propose(o)
-            if o.sampler.prob > 0.9 && o.sampler.ODEStep < o.sampler.opts.maxODEStep / 2
+            if o.sampler.prob > 0.7 && o.sampler.ODEStep < o.sampler.opts.maxODEStep
                 o.stableX = o.sampler.x;
                 o.stableV = o.sampler.v;
             end
@@ -67,7 +67,7 @@ classdef DynamicStepSize < handle
                 end
 
                 if ischar(shrink)
-                    s.x = o.stableX; s.v = o.stableV;
+                    %s.x = o.stableX; s.v = o.stableV;
                     
                     o.iterSinceShrink = 0;
                     o.rejectSinceShrink = 0;

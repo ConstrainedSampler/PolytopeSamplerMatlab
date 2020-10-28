@@ -39,7 +39,7 @@ function opts = default_options()
     
     opts.SampleStorage = struct;
     opts.SampleStorage.recordsPerIndependentSample = 5;
-    opts.SampleStorage.minNumRecords = 100;
+    opts.SampleStorage.minNumRecords = 1000;
     opts.SampleStorage.rawOutput = false;
     
     % Presolve Options
