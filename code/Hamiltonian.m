@@ -13,7 +13,7 @@ classdef Hamiltonian < handle
         barrier % TwoSidedBarrier
         df
         ddf
-        dddf
+        %dddf
         solver
         crudeSolver
         accSolver
@@ -46,7 +46,7 @@ classdef Hamiltonian < handle
             o.f = P.f;
             o.df = P.df;
             o.ddf = P.ddf;
-            o.dddf = P.dddf;
+            %o.dddf = P.dddf;
             o.opts = opts;
             o.m = m;
             o.n = n;
@@ -63,19 +63,17 @@ classdef Hamiltonian < handle
             o.y = P.y;
             assert(max(full(sum(o.T~=0,2))) <= 1);
             o.T2 = o.T.^2;
-            o.T3 = o.T.*o.T2;
-            
-            if ~isempty(o.df) && isfloat(o.df)
-                o.df = o.T'*o.df;
-            end
-            
-            if ~isempty(o.ddf) && isfloat(o.ddf)
-                o.ddf = o.T2'*o.ddf;
-            end
-            
-            if ~isempty(o.dddf) && isfloat(o.dddf)
-                o.dddf = o.T3'*o.dddf;
-            end
+            %o.T3 = o.T.*o.T2;
+%             
+%             if ~isempty(o.df) && isfloat(o.df)
+%                 o.df = o.T'*o.df;
+%             end
+%             if ~isempty(o.ddf) && isfloat(o.ddf)
+%                 o.ddf = o.T2'*o.ddf;
+%             end
+%             if ~isempty(o.dddf) && isfloat(o.dddf)
+%                 o.dddf = o.T3'*o.dddf;
+%             end
         end
         
         % when we prepare 
@@ -106,6 +104,7 @@ classdef Hamiltonian < handle
         
         % Resample v = g^{1/2} * N(0, I_d)
         function v = resample(o, x, v, momentum)
+            if nargin == 3, momentum = 0; end
             o.move(x);
             sqrtHess = sqrt(o.hess);
             v = sqrt(momentum) * v + sqrt(1-momentum) * (sqrtHess .* randn(o.n,1));
@@ -116,14 +115,7 @@ classdef Hamiltonian < handle
             o.prepare(x)
             K = 0.5 * v' * o.DK(x, v);
             U = 0.5 * (o.solver.logdet() + sum(log(o.hess)));
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    U = U + o.df' * x;
-                else
-                    U = U + o.f(o.T * x + o.y);
-                end
-            end
-            
+            U = U + o.f(o.T * x + o.y);
             E = U + K;
         end
         
@@ -132,17 +124,9 @@ classdef Hamiltonian < handle
             if ~o.prepared || isempty(o.last_dUdx)
                 o.prepare(x);
                 o.last_lsc = o.solver.leverageScoreComplement(o.opts.nSketch);
-                o.last_dUdx = o.barrier.tensor(x) .* o.last_lsc ./ (2*o.hess);
+                o.last_dUdx = o.barrier.tensor(x) .* o.last_lsc ./ (2*o.hess) + o.T' * o.df(o.T * x + o.y);
             end
             dUdx = o.last_dUdx;
-            
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    dUdx = dUdx + o.df;
-                else
-                    dUdx = dUdx + o.T' * o.df(o.T * x + o.y);
-                end
-            end
         end
         
         % Project to Ax = b
@@ -199,17 +183,7 @@ classdef Hamiltonian < handle
             if ~forceUpdate && all(o.x == x), return; end
             
             o.x = x;
-            h = o.barrier.hessian(x);
-            
-            if ~isempty(o.ddf)
-                if isfloat(o.ddf)
-                    h = h + o.ddf;
-                else
-                    h = h + o.T2' * o.ddf(o.T * x + o.y);
-                end
-            end
-            
-            o.hess = h;
+            o.hess = o.barrier.hessian(x) + o.T2' * o.ddf(o.T * x + o.y);
             o.prepared = false;
         end
     end

@@ -23,15 +23,10 @@ else
     error(['Problem ' name ' does not exists']);
 end
 
-P = Polytope.standardize(P);
+P = standardize_problem(P);
 
 % netlib LP are not bounded
 if contains(name, 'netlib/')
-<<<<<<< Updated upstream
-    x = linprog(P.df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
-    threshold = P.df' * x + abs(P.df)' * abs(x);
-    P.Aineq = [P.Aineq; P.df'];
-=======
     df = P.df(P.lb); % the df for netlib problem is a fixed vector
     x = linprog(df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
     threshold = df' * x + abs(df)' * abs(x);
@@ -39,7 +34,6 @@ if contains(name, 'netlib/')
     P.df = [];
     P.ddf = [];
     P.Aineq = [P.Aineq; df'];
->>>>>>> Stashed changes
     P.bineq = [P.bineq; threshold];
     P.ub = min(P.ub, 2 * max(abs(x)));
     P.lb = max(P.lb, -2 * max(abs(x)));

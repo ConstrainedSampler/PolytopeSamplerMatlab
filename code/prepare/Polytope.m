@@ -5,76 +5,21 @@ classdef Polytope < handle
         b   % constraint vector b
         T	% transformation T of the domain
         y	% shift of the domain
-        f	% the objective function and its derivatives in the original space
         barrier % TwoSidedBarrier
+        f	% the objective function and its derivatives in the original space
         df
         ddf
-        dddf
+        %dddf
+        originalProblem
         
         opts
         
         % private variables
-        ham
         center      % analytic center
         n
         
         % TODO: Assumed each row of T contains at most 1 non-zero
-        T2          % used for computing ddf, dddf
-        T3
-    end
-    
-    methods(Static)
-        function P = standardize(P)
-            if nonempty(P, 'Aeq')
-                n = size(P.Aeq,2);
-            elseif nonempty(P, 'Aineq')
-                n = size(P.Aineq,2);
-            elseif nonempty(P, 'lb')
-                n = length(P.lb);
-            elseif nonempty(P, 'ub')
-                n = length(P.ub);
-            elseif nonempty(P, 'center')
-                n = length(P.center);
-            else
-                error('Polytope:standardize', 'For unconstrained problems, an initial point "center" is required.');
-            end
-            
-            %% Set all non-existence fields
-            if ~nonempty(P, 'Aeq')
-                P.Aeq = sparse(zeros(0, n));
-            end
-            
-            if ~nonempty(P, 'beq')
-                P.beq = zeros(size(P.Aeq, 1), 1);
-            end
-            
-            if ~nonempty(P, 'Aineq')
-                P.Aineq = sparse(zeros(0, n));
-            end
-            
-            if ~nonempty(P, 'bineq')
-                P.bineq = zeros(size(P.Aineq, 1), 1);
-            end
-            
-            if ~nonempty(P, 'lb')
-                P.lb = -Inf * ones(n, 1);
-            end
-            
-            if ~nonempty(P,'ub')
-                P.ub = Inf * ones(n,1);
-            end
-            
-            if ~nonempty(P,'center')
-                P.center = [];
-            end
-            
-            %% Check the input dimensions
-            assert(all(size(P.Aineq) == [length(P.bineq) n]));
-            assert(all(size(P.Aeq) == [length(P.beq) n]));
-            assert(all(size(P.lb) == [n 1]));
-            assert(all(size(P.ub) == [n 1]));
-            assert(all(P.lb <= P.ub));
-        end
+        T2          % used for computing ddf
     end
     
     methods
@@ -99,19 +44,22 @@ classdef Polytope < handle
             %
             % Case 1: df is not defined
             %   f(x) = 0.
-            % In this case, f, ddf, dddf must be empty.
+            % In this case, f, ddf must be empty.
             %
             % Case 2: df is a vector
             %   f_i(x_i) = df_i x_i.
-            % In this case, f, ddf, dddf must be empty.
+            % In this case, f, ddf must be empty.
             %
             % Case 3: df is a function handle
             %   f need to be defined as a function handle.
             %   df need to be the deriative of f
             %   ddf is optional. Providing ddf improves the mixing time.
-            %   When ddf is provided, both ddf and dddf must be provided as
-            %   a function handle.
-            P = Polytope.standardize(P);
+            if isa(P, 'Polytope')
+                o = P;
+                return;
+            end
+            P = standardize_problem(P);
+            o.originalProblem = P;
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
             nP = size(P.Aeq, 2);
@@ -120,6 +68,10 @@ classdef Polytope < handle
             
             o.A = [P.Aeq sparse(nEq, nIneq); P.Aineq speye(nIneq)];
             o.b = [P.beq; P.bineq];
+            o.f = P.f;
+            o.df = P.df;
+            o.ddf = P.ddf;
+            %o.dddf = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
@@ -139,55 +91,10 @@ classdef Polytope < handle
             o.barrier = TwoSidedBarrier(lb, ub);
             o.barrier.extraHessian = o.opts.extraHessian;
             
-            %% Store f, df, ddf, dddf
-            randVec = randn(nP, 1);
-            hasf = isfield(P, 'f') && ~isempty(P.f);
-            hasdf = isfield(P, 'df') && ~isempty(P.df);
-            hasddf = isfield(P, 'ddf') && ~isempty(P.ddf);
-            hasdddf = isfield(P, 'dddf') && ~isempty(P.dddf);
-            
-            % Case 1: df is empty
-            if ~hasdf
-                assert(~hasf && ~hasddf && ~hasdddf);
-                o.f = [];
-                o.df = [];
-                o.ddf = [];
-                o.dddf = [];
-            elseif isfloat(P.df) % Case 2: df is a vector
-                assert(all(size(P.df) == [nP 1]));
-                o.f = @(x) sum(x.*P.df);
-                o.df = @(x) P.df;
-                o.ddf = [];
-                o.dddf = [];
-            elseif isa(P.df, 'function_handle') % Case 3: df is handle
-                assert(hasf);
-                assert(isa(P.f,'function_handle'));
-                assert(all(size(P.f(randVec)) == [1 1]));
-                assert(all(size(P.df(randVec)) == [nP 1]));
-                o.f = P.f;
-                o.df = P.df;
-                if hasddf
-                    assert(hasdddf);
-                    assert(isa(P.ddf,'function_handle'));
-                    assert(isa(P.dddf,'function_handle'));
-                    assert(all(size(P.ddf(randVec)) == [nP 1]));
-                    assert(all(size(P.dddf(randVec)) == [nP 1]));
-                    o.ddf = P.ddf;
-                    o.dddf = P.dddf;
-                else
-                    assert(~hasdddf);
-                    o.ddf = [];
-                    o.dddf = [];
-                end
-            end
-            
-            %% Verify f, df, ddf, dddf
-            % TODO
-            
             %% Update the transformation Tx + y
             o.T = sparse(nP, o.n);
             o.T(:,1:nP) = speye(nP);
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
             o.y = zeros(nP, 1);
             
             %% Simplify the polytope
@@ -202,6 +109,7 @@ classdef Polytope < handle
                 o.center = P.center;
             elseif ~isempty(o.center)
                 o.opts.weightedBarrier = false;
+                o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
                 o.center = analytic_center(o.A, o.b, o, o.opts, o.barrier.center);
             end
             
@@ -212,12 +120,12 @@ classdef Polytope < handle
             end
             
             %% Compute the initial weight for weighted barrier
-            if opts.weightedBarrier
-                o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
-                o.barrier.extraHessian = o.opts.extraHessian;
-                o.opts.weightedBarrier = true;
-                o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
-            end
+%             if opts.weightedBarrier
+%                 o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
+%                 o.barrier.extraHessian = o.opts.extraHessian;
+%                 o.opts.weightedBarrier = true;
+%                 o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
+%             end
         end
         
         function w = estimate_width(o, x)
@@ -236,6 +144,7 @@ classdef Polytope < handle
         end
         
         function simplify(o)
+            o.opts.logFunc('Polytope:simplify', sprintf('Start simplifying the problem.\nInitially, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
             o.rescale();
             o.split_dense_cols(o.opts.splitDenseCols);
             o.reorder();
@@ -251,30 +160,15 @@ classdef Polytope < handle
                 
             end
             o.reorder();
+            o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
         end
         
         function grad = gradient(o, x)
-            grad = o.barrier.gradient(x);
-            
-            if ~isempty(o.df)
-                if isfloat(o.df)
-                    grad = grad + o.T' * o.df;
-                else
-                    grad = grad + o.T' * o.df(o.T * x + o.y);
-                end
-            end 
+            grad = o.barrier.gradient(x) + o.T' * o.df(o.T * x + o.y);
         end
         
         function h = hessian(o, x)
-            h = o.barrier.hessian(x);
-            
-            if ~isempty(o.ddf)
-                if isfloat(o.ddf)
-                    h = h + o.T2' * o.ddf;
-                else
-                    h = h + o.T2' * o.ddf(o.T * x + o.y);
-                end
-            end
+            h = o.barrier.hessian(x) + o.T2' * o.ddf(o.T * x + o.y);
         end
     end
     
@@ -293,7 +187,7 @@ classdef Polytope < handle
             o.A = o.A * S;
             o.y = o.y + o.T * z;
             o.T = o.T * S;
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
         end
         
         function rescale(o)
@@ -320,6 +214,9 @@ classdef Polytope < handle
             x = o.A'*solver.solve(o.b);
             x(abs(x) < 1e-8) = 0; 
             fixedVars = (d < tol*(1+abs(x)));
+            if sum(fixedVars) > 0
+                o.opts.logFunc('Polytope:simplify', sprintf('Removed %i fixed coordinates.\n', sum(fixedVars)));
+            end
             
             % remove all fixed variables
             S = speye(o.n);
@@ -374,6 +271,7 @@ classdef Polytope < handle
                 return; % This is important for empty matrix
             end
             
+            o.opts.logFunc('Polytope:simplify', sprintf('Removed %i redundant constraints.\n', size(o.A,1) - size(I, 1)));
             o.A = o.A(I, :);
             o.b = o.b(I);
         end
@@ -381,6 +279,7 @@ classdef Polytope < handle
         function extract_collapsed_variables(o)
             % Extract collapsed variables and move it to constraints
             o.opts.weightedBarrier = false;
+            o.opts.logFunc('Polytope:simplify', ['Run interior point methods to detect fixed coordinates:' newline]);
             [o.center, Ac, bc] = analytic_center(o.A, o.b, o, o.opts, o.center);
             
             % update the A and b
@@ -427,7 +326,7 @@ classdef Polytope < handle
             end
             
             o.T = [o.T sparse(size(o.T,1), length(ub)-size(o.T,2))];
-            o.T2 = o.T.^2; o.T3 = o.T.*o.T2;
+            o.T2 = o.T.^2;
             o.A = A_;
             o.n = length(lb);
             o.barrier.update(lb, ub);

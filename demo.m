@@ -1,19 +1,21 @@
+%% Example 1: Sample uniform from a simplex
 initSampler
 
-%% Example 1: Sample uniform from a simplex
 P = struct; d = 100;
 P.Aineq = ones(1, d);
 P.bineq = 1;
 P.lb = zeros(d, 1);
 
-o = sample(P, 100); % Number of samples = 100
+o = sample(P, 500); % Number of samples = 500
 s = thin_samples(o.samples);  % extract "independent" samples from the dependent samples
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
-[pVal] = uniformtest(o, struct('toPlot', true));
+uniformtest(o, struct('toPlot', true));
 drawnow()
 
 %% Example 2: Sample uniform from Birkhoff polytope
+initSampler
+
 P = struct; d = 10;
 P.lb = zeros(d^2,1);
 P.Aeq = sparse(2*d,d^2);
@@ -23,19 +25,21 @@ for i=1:d
     P.Aeq(d+i,i:d:d^2)=1;
 end
 
+fid = fopen('demo.log', 'w');
 opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
-fid = fopen('demo.log','w');
-opts.outputFunc = @(tag, msg, varargin) {fprintf(fid, msg, varargin{:}); fprintf(msg, varargin{:})}; % output the results to the screen and demo.log
+opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg); % Output the debug log to demo.log
 o = sample(P, +Inf, opts);
 s = thin_samples(o.samples);
 figure;
 histogram(s(1,:))
 title('Marginal of first coordinate of Birkhoff polytope');
-fclose(fid);
 drawnow()
+fclose(fid);
 
 %% Example 3: Sample Gaussian distribution restricted to a hypercube
+initSampler
+
 P = struct; d = 100;
 P.lb = -ones(d,1);
 P.ub = ones(d,1);
@@ -53,7 +57,9 @@ histogram(s(:))
 title('Marginal of Gaussian distribution restricted to hypercube');
 
 %% Example 4: Read a polytope according to Cobra format
-load('coverage/Recon1.mat')
+initSampler
+
+load(fullfile('coverage','Recon1.mat'))
 P = struct;
 P.lb = model.lb;
 P.ub = model.ub;
@@ -63,7 +69,9 @@ o = sample(P, 100);
 [pVal] = uniformtest(o, struct('toPlot', true));
 
 %% Example 5: Brownian bridge
-P = struct; d = 10000;
+initSampler
+
+P = struct; d = 1000;
 e = ones(d,1);
 P.Aeq = [spdiags([e -e], 0:1, d-1, d) spdiags(e, 0, d-1, d-1)];
 P.beq = zeros(d-1,1);
@@ -83,4 +91,3 @@ o = sample(P, 10);
 figure;
 plot(o.samples(1:d,end))
 title('Brownian bridge');
-
