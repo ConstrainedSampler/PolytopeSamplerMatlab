@@ -1,11 +1,17 @@
 initSampler
 
-
+fid = fopen('demo.log', 'w');
 P = loadProblem('basic/tv_ball@100');
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger', 'ProgressBar'};
+%P_opts.effectiveStepSize = 3;
+%P_opts.initalStepSize = 0.1;
+P_opts.SampleStorage.minNumRecords = 10000000;
+P_opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg); % Output the debug log to demo.log
+%P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger', 'ProgressBar'};
+P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DebugLogger', 'ProgressBar'};
 sample_out = sample(P, 100, P_opts);
+fclose(fid);
 
 o = {};
 o.m = size(sample_out.sampler.ham.A,1);
