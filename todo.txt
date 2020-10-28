@@ -1,0 +1,6 @@
+> Remove all warning to log function
+> has a summary function
+> Write a script run all tests (fast and detailed version)
+> update the README.md
+> Seems the Example 1 has pval problem. I neeed to run multiple test to make sure 
+> Write a script to test this

@@ -14,16 +14,16 @@ function [pVal] = uniformtest(o, opts)
 %        distribution r^(dim-1). We use Anderson-Darling and Kolmogorov-Smirnov tests here.
 
 if ~exist('opts', 'var'), opts = struct; end
+
+if ~exist('adtest') || ~exist('kstest')
+    error('This function requires the Statistics and Machine Learning Toolbox');
+end
+
 defaults.toPlot = false;
 defaults.tol = 1e-8;
 opts = setfield(defaults, opts);
-P = Polytope.standardize(o.problem);
+P = o.polytope.originalProblem;
 x = thin_samples(o.samples);
-
-if o.opts.rawOutput
-    x = o.polytope.T * x + o.polytope.y;
-end
-
 dim = o.polytope.n - size(o.polytope.A, 1);
 
 if size(x,2) < 6
@@ -33,7 +33,7 @@ end
 p = x(:,1);
 x = x(:,2:end);
 
-if isfield(P, 'df') && ~isempty(P.df)
+if sum(abs(P.df(x(:,end)))) ~= 0
     warning('PolytopeSampler:uniformtest:nonUniform', 'The density of the distribution should be uniform, namely, df = 0.');
 end
 
@@ -59,17 +59,27 @@ for i=1:K
     unif_vals(i) = (1 / (1+r))^dim;
 end
 
+try
+    [~,pVal1] = adtest(norminv(unif_vals));
+catch
+    pVal1 = 1;
+end
+
+try
+    [~,pVal2] = kstest(norminv(unif_vals));
+catch
+    pVal2 = 1;
+end
+
+z = pVal1 * pVal2;
+pVal = z - z * log(z);
+
 if opts.toPlot
     figure;
     cdfplot(unif_vals);
     hold on;
     plot(0:0.01:1, 0:0.01:1, '.')
-end
-
-try
-    [~,pVal] = adtest(norminv(unif_vals));
-catch
-    pVal = 1;
+    title(sprintf('Empirical CDF of the radial distribution (pval = %.4f)', pVal))
 end
 
 end

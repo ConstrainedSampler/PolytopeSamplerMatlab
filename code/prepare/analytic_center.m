@@ -33,7 +33,7 @@ formats.t = struct('label', 'Step Size', 'format', '13.2e');
 formats.primalErr = struct('label', 'Primal Error', 'format', '13.2e');
 formats.dualErr = struct('label', 'Dual Error', 'format', '13.2e');
 output = TableDisplay(formats);
-output.outputFunc = opts.outputFunc;
+output.logFunc = opts.logFunc;
 output.tag = 'analytic_center';
 output.header();
 

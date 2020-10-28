@@ -1,4 +1,5 @@
 *.asv
 *.log
+.DS_Store
 paper/
 coverage/problems/extra/

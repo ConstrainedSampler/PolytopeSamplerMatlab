@@ -2,7 +2,7 @@ function uniform_sample_test
 s = TestSuite;
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 0;
+s.debug = 1;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
@@ -27,19 +27,19 @@ warning('off', 'stats:adtest:NotEnoughData');
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.outputFunc = @(tag, msg, varargin) {};
+P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
 sample_out = sample(P, num_samples, P_opts);
 
 o = {};
-o.m = size(sample_out.ham.A,1);
-o.n = sample_out.ham.n;
-o.nnz = nnz(sample_out.ham.A);
+o.m = size(sample_out.sampler.ham.A,1);
+o.n = sample_out.sampler.ham.n;
+o.nnz = nnz(sample_out.sampler.ham.A);
 o.preTime = sample_out.prepareTime;
-o.stepSize = sample_out.stepSize;
-o.nStep = sample_out.i;
+o.stepSize = sample_out.sampler.stepSize;
+o.nStep = sample_out.totalStep;
 o.avgAcc = sample_out.averageLinearSystemAccuracy;
 [o.pVal] = uniformtest(sample_out);
-o.mixing = sample_out.mixingIter;
+o.mixing = sample_out.sampler.mixingTime;
 
 if (o.mixing < 500 && o.pVal > 0.005 && o.pVal < 0.995)
     o.success = 1;

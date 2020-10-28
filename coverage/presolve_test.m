@@ -2,7 +2,7 @@ function presolve_test
 s = TestSuite;
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 0;
+s.debug = 1;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
@@ -26,14 +26,13 @@ P = loadProblem(name);
 
 %% Test 1: Check if the solution remains the same.
 
-if ~nonempty(P, 'df')
+if sum(abs(P.df(randn(size(P.lb))))) == 0
     P.df = randn(size(P.lb));
 end
 
 % first solve it using matlab LP solver
 P_opts = default_options();
 P_opts.runSimplify = false;
-P_opts.outputFunc = @(tag, msg, varargin) {};
 P0 = Polytope(P, P_opts);
 df = P0.df(zeros(P0.n, 1));
 
@@ -61,7 +60,7 @@ o.feasible = P1.barrier.feasible(P1.center);
 o.error = abs(o.opt-o.optNew)/(abs(o.opt)+1e-4);
 
 %% Test 2: check if the analytic center is deep inside
-P.df = [];
+P.df = zeros(size(P.lb));
 P3 = Polytope(P, P_opts);
 c = P3.center;
 o.minDist = min(c - P3.barrier.lb, P3.barrier.ub - c);
