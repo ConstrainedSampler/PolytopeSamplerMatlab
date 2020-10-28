@@ -1,0 +1,9 @@
+> Remove all warning to log function
+> Remove warning off
+> has a summary function
+> Write a script run all tests (fast and detailed version)
+> Seems the Example 1 has pval problem. I neeed to run multiple test to make sure 
+> Check the coverage code again and write a script to run all
+>> Use the proper module there
+>> Check the uniformtest and presolve_test so that I can run particular example
+>> Make the output more useful

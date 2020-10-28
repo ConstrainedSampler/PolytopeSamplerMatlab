@@ -11,5 +11,5 @@ function [y] = thin_samples(x)
 
 ess = effective_sample_size(x);
 gap = size(x,2)/min(ess);
-y = x(:, ceil(gap:gap:size(x,2)));
+y = x(:, ceil(0.1*size(x,2):gap:size(x,2)));
 end

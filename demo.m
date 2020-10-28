@@ -80,6 +80,7 @@ P.ddf = @(x) [zeros(d,1);ones(d-1,1)];
 P.dddf = @(x) zeros(2*d-1,1);
 
 o = sample(P, 10);
+figure;
 plot(o.samples(1:d,end))
 title('Brownian bridge');
 
