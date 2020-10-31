@@ -77,6 +77,11 @@ classdef TestSuite < handle
             if o.randomSeed ~= 0, rng(o.randomSeed); end
             warning('off', 'MATLAB:nearlySingularMatrix');
             warning('off', 'MATLAB:singularMatrix');
+            warning('off', 'uniformtest:size');
+            warning('off', 'stats:adtest:OutOfRangePLow');
+            warning('off', 'stats:adtest:OutOfRangePHigh');
+            warning('off', 'stats:adtest:SmallSampleSize');
+            warning('off', 'stats:adtest:NotEnoughData');
             
             t = tic;
             if (o.debug)
@@ -102,13 +107,3 @@ classdef TestSuite < handle
         end
     end
 end
-
-% TODO: remove these after testing
-% warning('off', 'MATLAB:nearlySingularMatrix');
-% warning('off', 'MATLAB:singularMatrix');
-% warning('off', 'stats:adtest:OutOfRangePLow');
-% warning('off', 'stats:adtest:OutOfRangePHigh');
-% warning('off', 'stats:adtest:SmallSampleSize');
-% warning('off', 'stats:adtest:NotEnoughData');
-% warning('off', 'unifScaleTest:size');
-% warning('off', 'unifScaleTest:nonzero_grad');

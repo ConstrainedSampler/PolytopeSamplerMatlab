@@ -19,8 +19,6 @@ s.test();
 end
 
 function o = test_func(name)
-warning('off', 'Hamiltonian:Unbounded');
-
 o = {};
 P = loadProblem(name);
 

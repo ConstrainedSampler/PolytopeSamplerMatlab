@@ -26,8 +26,8 @@ P = o.polytope.originalProblem;
 x = thin_samples(o.samples);
 dim = o.polytope.n - size(o.polytope.A, 1);
 
-if size(x,2) < 6
-    warning('PolytopeSampler:uniformtest:size', 'Sample size must be at least 6.');
+if size(x,2) < 10
+    warning('uniformtest:size', 'Effective sample size should be at least 10.');
 end
 
 p = x(:,1);

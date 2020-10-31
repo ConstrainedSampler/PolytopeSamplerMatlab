@@ -17,11 +17,6 @@ s.test();
 end
 
 function o = test_func(name, num_samples)
-warning('off', 'PolytopeSampler:uniformtest:size');
-warning('off', 'stats:adtest:OutOfRangePLow');
-warning('off', 'stats:adtest:OutOfRangePHigh');
-warning('off', 'stats:adtest:SmallSampleSize');
-warning('off', 'stats:adtest:NotEnoughData');
 
 % load the problem and truncate it to make it bounded
 P = loadProblem(name);

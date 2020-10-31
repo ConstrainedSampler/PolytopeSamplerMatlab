@@ -116,7 +116,7 @@ classdef Polytope < handle
             %% Give Warning for Unbounded Polytope
             w = o.estimate_width(o.center);
             if (max(w) > 1e10)
-                warning('Hamiltonian:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
+                warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
             end
             
             %% Compute the initial weight for weighted barrier
