@@ -1,8 +1,14 @@
-function presolve_test
+function presolve_test(debug, folder, problems)
 s = TestSuite;
+if nargin >= 2 && ~isempty(folder)
+    s.problemFilter.folder = folder;
+end
+if nargin >= 3 && ~isempty(problems)
+    s.problems = problems;
+end
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 1;
+s.debug = debug;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
