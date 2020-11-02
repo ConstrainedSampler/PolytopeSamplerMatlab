@@ -74,10 +74,8 @@ P = struct; d = 1000;
 e = ones(d,1);
 P.Aeq = [spdiags([e -e], 0:1, d-1, d) spdiags(e, 0, d-1, d-1)];
 P.beq = zeros(d-1,1);
-P.lb = -10*ones(2*d-1,1);
-P.ub = 10*ones(2*d-1,1);
-P.lb(1:d) = -100 * sqrt(d);
-P.ub(1:d) = 100 * sqrt(d);
+P.lb = -Inf*ones(2*d-1,1);
+P.ub = Inf*ones(2*d-1,1);
 P.lb([1 d]) = 0;
 P.ub([1 d]) = 0;
 
