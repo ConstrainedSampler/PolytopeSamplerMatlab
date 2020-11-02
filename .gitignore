@@ -3,3 +3,4 @@
 .DS_Store
 paper/
 coverage/problems/extra/
+*_ignore*

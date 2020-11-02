@@ -46,7 +46,6 @@ P.ub = ones(d,1);
 P.f = @(x) x'*x/2;
 P.df = @(x) x;
 P.ddf = @(x) ones(d,1);
-P.dddf = @(x) zeros(d,1);
 
 opts = default_options();
 opts.maxStep = 10000; % Stop after 10000 iter
@@ -85,7 +84,6 @@ P.ub([1 d]) = 0;
 P.f = @(x) x((d+1):end)'*x((d+1):end)/2;
 P.df = @(x) [zeros(d,1);x((d+1):end)];
 P.ddf = @(x) [zeros(d,1);ones(d-1,1)];
-P.dddf = @(x) zeros(2*d-1,1);
 
 o = sample(P, 100);
 figure;
