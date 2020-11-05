@@ -1,5 +1,5 @@
 function l = problemList(options)
-if ~exist('options', 'var'), options = []; end
+if ~exist('options', 'var'), options = struct(); end
 problems = {};
 
 default.fileSizeLimit = [0 +Inf]; % in bytes
