@@ -34,11 +34,11 @@ The polytope is defined by
 >> P.lb = zeros(d, 1);
 ```
 The polytope has dimension `d = 10` with constraint `sum_i x_i = 1` and `x >= 0`. 
-To generate 100 samples uniformly from the polytope `P`, we call the function `sample()`. 
+To generate 200 samples uniformly from the polytope `P`, we call the function `sample()`. 
 ```
 >> o = sample(P, 200);
   Time spent |  Time reamin |                  Progress | Samples |  AccRate | StepSize |  MixTime
-00d:00:00:01 | 00d:00:00:00 | ######################### | 214/200 | 0.984784 | 0.200000 |     11.0
+00d:00:00:01 | 00d:00:00:00 | ######################### | 211/200 | 0.989903 | 0.200000 |     11.2
 Done!
 ```
 We can access the samples generated using
@@ -56,16 +56,16 @@ ans =
                      mean        std         25%         50%         75%      n_ess      r_hat 
                    ________    ________    ________    ________    _______    ______    _______
 
-    samples[1]      0.10023    0.086023    0.034496    0.073419    0.14485    229.98     1.0013
-    samples[2]      0.10641    0.085198    0.036705    0.083089    0.15976    242.72     1.0186
-    samples[3]     0.096408    0.087197     0.03118     0.07296    0.13157    220.33     1.0153
-    samples[4]      0.10016    0.088525    0.036215    0.075896    0.13846    221.46     1.0067
-    samples[5]      0.10046    0.087502    0.035919     0.07427    0.14041    226.46    0.99859
-    samples[6]      0.09742    0.088638    0.031311    0.074424    0.13731    215.08     1.0042
-    samples[7]      0.10408    0.095544    0.034284    0.076434    0.14492    236.23     1.0617
-    samples[8]     0.098973    0.080342    0.041192    0.081112     0.1321    226.55     1.0049
-    samples[9]      0.10089    0.090578    0.029221     0.07661    0.14485     228.1     1.0023
-    samples[10]    0.094967    0.085318    0.030154    0.069197    0.13642    224.57      1.001
+    samples[1]     0.093187    0.091207    0.026222    0.064326    0.13375    221.51    0.99954
+    samples[2]     0.092815    0.086905    0.027018    0.066017    0.13221    234.59     1.0301
+    samples[3]      0.10034    0.090834    0.030968    0.075631    0.13788    216.56     1.0159
+    samples[4]      0.10531    0.092285    0.035363    0.077519     0.1481    235.25     1.0062
+    samples[5]      0.10437    0.087634    0.034946    0.080095     0.1533    212.54    0.99841
+    samples[6]       0.1029    0.093724    0.028774    0.074354    0.15135     227.6     1.0052
+    samples[7]       0.1042    0.083084    0.038431    0.081964    0.15352    231.54     1.0008
+    samples[8]     0.088778    0.086902    0.025565    0.062473    0.11837    229.69     1.0469
+    samples[9]      0.10627     0.09074    0.036962    0.084294    0.15125    211.64    0.99856
+    samples[10]     0.10184    0.084699    0.035981    0.074923    0.14578    230.63     1.0277
 ```
 `n_ess` shows the effective sample size of the samples generated. `r_hat` tests the convergence of the sampling algorithm. A value of `r_hat` close to 1 indicates that the algorithm has converged properly. 
 
