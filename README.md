@@ -1,6 +1,6 @@
 # PolytopeSampler
 
-PolytopeSampler is a `Matlab` implementation of constrained Hamiltonian Monte Carlo for sampling from high dimensional disributions on polytopes. It is able to sample efficiently from sets and distributions of more than 100K dimensions,
+PolytopeSampler is a `Matlab` implementation of constrained Hamiltonian Monte Carlo for sampling from high dimensional disributions on polytopes. It is able to sample efficiently from sets and distributions of more than 100K dimensions.
 
 ## Quick Tutorial
 
