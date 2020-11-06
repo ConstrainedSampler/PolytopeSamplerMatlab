@@ -1,7 +1,8 @@
 *.asv
 *.log
 *.m~
+*_ignore*
+.gitignore
 .DS_Store
 paper/
 coverage/problems/extra/
-*_ignore*
