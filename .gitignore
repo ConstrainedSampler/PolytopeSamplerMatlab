@@ -2,7 +2,6 @@
 *.log
 *.m~
 *_ignore*
-.log.txt.icloud
 .DS_Store
 paper/
 coverage/problems/extra/
