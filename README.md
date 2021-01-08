@@ -10,7 +10,7 @@ The function `f` can be specified by arrays containing its first and second deri
 
 To sample `N` points from a polytope `P`, you can call `sample(P, N)`. The function `sample` will 
 1. Find an initial feasible point 
-2. Run constrained Hmailton Monte Carlo
+2. Run constrained Hamiltonian Monte Carlo
 3. Test convergence of the sampling algorithm by computing Effective Sample Size (ESS) and terminate when `ESS >= N`. If the target distribution is uniform, a uniformity test will also be performed.
 
 Extra parameters can be set up using `opts`. Some useful parameters include `maxTime` and `maxStep`. By default, they are set to 
