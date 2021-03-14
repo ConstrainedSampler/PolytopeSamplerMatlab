@@ -5,10 +5,11 @@ classdef MexSolver < handle
         w = NaN
         w_solve = NaN
         
-        % privates
-        func
+        % private
         uid
+        uid2
         initialized = false
+        precision
     end
     
     methods
@@ -17,24 +18,24 @@ classdef MexSolver < handle
             if nargin < 2, precision = 'double'; end
             
             o.A = A;
+            o.uid = PackedChol('init', uint64(randi(2^32-1,'uint32')), A);
             if (strcmp(precision,'double'))
-                o.func = @CSolver_double;
+                PackedChol('setAccuracyTarget', o.uid, 1e-6);
             elseif (strcmp(precision,'doubledouble'))
-                o.func = @CSolver_dd;
+                PackedChol('setAccuracyTarget', o.uid, 0.0);
             else
                 error('Unsupported precision mode');
             end
-            o.uid = o.func('init', uint64(randi(2^32-1,'uint32')), A);
         end
         
         function delete(o)
-            o.func('delete', o.uid);
+            PackedChol('delete', o.uid);
         end
         
         function setScale(o, w)
             o.initialized = true;
             if ~all(w == o.w) || (numel(w) ~= numel(o.w))
-                o.func('decompose', o.uid, w);
+                PackedChol('decompose', o.uid, w);
             end
             
             o.w = w;
@@ -44,13 +45,13 @@ classdef MexSolver < handle
         function r = diagL(o)
             assert(o.initialized);
             
-            r = o.func('diagL', o.uid);
+            r = PackedChol('diagL', o.uid);
         end
         
         function r = logdet(o)
             assert(o.initialized);
             
-            r = o.func('logdet', o.uid);
+            r = PackedChol('logdet', o.uid);
         end
         
         % Note that sigma can be negative. 
@@ -59,13 +60,13 @@ classdef MexSolver < handle
             assert(o.initialized);
             
             if nargin == 1, nSketch = 0; end
-            sigma = o.func('leverageScoreComplement', o.uid, nSketch);
+            sigma = PackedChol('leverageScoreComplement', o.uid, nSketch);
         end
         
         function y2 = approxSolve(o, b)
             assert(o.initialized);
             
-            y2 = o.func('solve', o.uid, b')';
+            y2 = PackedChol('solve', o.uid, b')';
         end
         
         function x = solve(o, b, w, x0)

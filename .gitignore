@@ -1,6 +1,7 @@
 *.asv
 *.log
 *.m~
+*.pdb
 *_ignore*
 .DS_Store
 paper/

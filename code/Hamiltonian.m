@@ -46,7 +46,6 @@ classdef Hamiltonian < handle
             o.f = P.f;
             o.df = P.df;
             o.ddf = P.ddf;
-            %o.dddf = P.dddf;
             o.opts = opts;
             o.m = m;
             o.n = n;
@@ -63,40 +62,13 @@ classdef Hamiltonian < handle
             o.y = P.y;
             assert(max(full(sum(o.T~=0,2))) <= 1);
             o.T2 = o.T.^2;
-            %o.T3 = o.T.*o.T2;
-%             
-%             if ~isempty(o.df) && isfloat(o.df)
-%                 o.df = o.T'*o.df;
-%             end
-%             if ~isempty(o.ddf) && isfloat(o.ddf)
-%                 o.ddf = o.T2'*o.ddf;
-%             end
-%             if ~isempty(o.dddf) && isfloat(o.dddf)
-%                 o.dddf = o.T3'*o.dddf;
-%             end
         end
         
         % when we prepare 
         function prepare(o, x)
             o.move(x);
             if ~o.prepared
-                if o.opts.checkPrecision || strcmp(o.precision, 'doubledouble')
-                    % first try if double precision is accurate enough
-                    o.crudeSolver.setScale(1./o.hess);
-                    z = 1 - o.crudeSolver.leverageScoreComplement(1);
-                    o.accuracy = abs(sum(z)/(size(o.A,1)+eps) - 1); % + eps is to avoid 0/0 case
-                    if o.accuracy < o.opts.crudeSolverThreshold
-                        o.solver = o.crudeSolver;
-                        o.precision = 'double';
-                    else
-                        o.accSolver.setScale(1./o.hess);
-                        o.solver = o.accSolver;
-                        o.precision = 'doubledouble';
-                    end
-                else
-                    o.crudeSolver.setScale(1./o.hess);
-                    o.accuracy = 0;
-                end
+                o.solver.setScale(1./o.hess);
                 o.last_dUdx = [];
             end
             o.prepared = true;

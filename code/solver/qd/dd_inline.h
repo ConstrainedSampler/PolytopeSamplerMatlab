@@ -532,6 +532,14 @@ inline bool dd_real::is_negative() const {
   return (x[0] < 0.0);
 }
 
+inline dd_real::operator bool() const {
+    return (x[0] != 0.0);
+}
+
+inline dd_real::operator double() const {
+    return to_double(*this);
+}
+
 /* Absolute value */
 inline dd_real abs(const dd_real &a) {
   return (a.x[0] < 0.0) ? -a : a;

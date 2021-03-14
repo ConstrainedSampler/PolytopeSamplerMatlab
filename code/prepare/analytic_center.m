@@ -55,8 +55,7 @@ for iter = 1:opts.ipmMaxIter
     rs = b - A * x;
     Hinv = 1./f.hessian(x);
     solver.setScale(Hinv);
-    dr = solver.solve([rs A * (Hinv .* rx)]); % TODO
-    dr1 = A' * dr(:,1); dr2 = A' * dr(:,2);
+    dr1 = A' * solver.solve(rs); dr2 = A' * solver.solve(A * (Hinv .* rx));
     dx1 = Hinv .* (dr1);
     dx2 = Hinv .* (rx - dr2);
     

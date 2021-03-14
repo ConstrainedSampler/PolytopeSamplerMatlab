@@ -1,18 +1,9 @@
-#ifndef MEX_UTILS_H_
-#define MEX_UTILS_H_
-
-template<typename Tin, typename Tout>
-inline Tout convert(Tin x)
-{
-    return Tout(x);
-}
-
+#pragma once
 #include "mex.h"
 #include <cstdint>
-#include <type_traits>
 #include <typeinfo>
-#include "CSparse/cs.h"
-using namespace CSparse;
+#include "PackedCSparse/SparseMatrix.h"
+using namespace PackedCSparse;
 
 namespace MexEnvironment
 {
@@ -38,6 +29,8 @@ namespace MexEnvironment
     MEX_TYPE_DEFINE(uint64_t, mxUINT64_CLASS);
     MEX_TYPE_DEFINE(float, mxSINGLE_CLASS);
     MEX_TYPE_DEFINE(double, mxDOUBLE_CLASS);
+	
+	#undef MEX_TYPE_DEFINE
     
     /* ====== Errors ====== */
     template <typename... Args>
@@ -133,6 +126,15 @@ namespace MexEnvironment
         size_t m = 1, n = 1;
         return *inputArray<T>(m, n);
     }
+
+    template<typename T>
+    T inputScalar(T default_value)
+    {
+        T val = default_value;
+        if (rhs_id < nrhs)
+            val = env::inputScalar<T>();
+        return val;
+    }
     
     const char *inputString()
     {
@@ -142,9 +144,10 @@ namespace MexEnvironment
         
         return mxArrayToString(pt);
     }
-    
+
+    //A better thing to do is to have a matrix "view" and output the view
     template<typename Tv = double, typename Ti = mexIdx>
-    const cs<Tv, Ti> inputSparseArray(size_t mRequired = -1, size_t nRequired = -1)
+    SparseMatrix<Tv, Ti> inputSparseArray(size_t mRequired = -1, size_t nRequired = -1)
     {
         const mxArray* pt = input();
         size_t m, n, nzmax;
@@ -167,40 +170,42 @@ namespace MexEnvironment
             error("The %d-th parameter should be %s.", rhs_id, typeid(Tv).name());
         
         
-        cs<Tv, Ti> A;
-        A.m = m; A.n = n; A.nzmax = jc[n];
-        A.i = ir; A.p = jc; A.x = x;
-        return A;
+        SparseMatrix<Tv, Ti> A(m, n, nzmax);
+        std::copy(ir, ir + nzmax, A.i.get());
+        std::copy(jc, jc + n + 1, A.p.get());
+        std::copy(x, x + nzmax, A.x.get());
+        return std::move(A);
     }
     
     /* ====== Various Output Functions ====== */
     template<typename Tv = double, typename Ti = mexIdx>
-    void outputSparseArray(cs<Tv, Ti>& A, bool patternOnly = false)
+    void outputSparseArray(const SparseMatrix<Tv, Ti>& A, bool patternOnly = false)
     {
         mxArray* pt;
+        Ti nz = A.nnz();
 		if (patternOnly)
 		{
-			pt = mxCreateSparseLogicalMatrix(A.m, A.n, A.nzmax);
+			pt = mxCreateSparseLogicalMatrix(A.m, A.n, nz);
 			bool* Ax = (bool*)mxGetData(pt);
-			for (size_t s = 0; s < A.nzmax; ++s)
-				Ax[s] = convert<Tv, bool>(A.x[s]);
+			for (Ti s = 0; s < nz; ++s)
+				Ax[s] = bool(A.x[s]);
 		}
 		else
 		{
-			pt = mxCreateSparse(A.m, A.n, A.nzmax, mxREAL);
+			pt = mxCreateSparse(A.m, A.n, nz, mxREAL);
 			double* Ax = (double*)mxGetData(pt);
-			for (size_t s = 0; s < A.nzmax; ++s)
-				Ax[s] = convert<Tv, double>(A.x[s]);
+			for (Ti s = 0; s < nz; ++s)
+				Ax[s] = double(A.x[s]);
 		}
         output(pt);
 
         mexIdx* Ai = (mexIdx*)mxGetIr(pt);
-        for (size_t s = 0; s < A.nzmax; ++s)
-            Ai[s] = convert<Ti, mexIdx>(A.i[s]);
+        for (Ti s = 0; s < nz; ++s)
+            Ai[s] = mexIdx(A.i[s]);
 
         mexIdx* Ap = (mexIdx*)mxGetJc(pt);
-        for (size_t s = 0; s <= A.n; ++s)
-            Ap[s] = convert<Ti, mexIdx>(A.p[s]);
+        for (Ti s = 0; s <= A.n; ++s)
+            Ap[s] = mexIdx(A.p[s]);
     }
 
     template<typename Tv>
@@ -222,7 +227,7 @@ namespace MexEnvironment
 	{
 		double *out = outputArray<double>(m, n);
 		for (size_t s = 0; s < m * n; ++s)
-			out[s] = convert<Tv, double>(x[s]);
+			out[s] = double(x[s]);
 	}
     
     template<typename T>
@@ -231,8 +236,6 @@ namespace MexEnvironment
         *outputArray<T>(1, 1) = val;
     }
 };
-
-
 
 int main();
 
@@ -258,4 +261,3 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     return;
 }
-#endif

@@ -140,6 +140,9 @@ struct QD_API dd_real {
   bool is_positive() const;
   bool is_negative() const;
 
+  explicit operator bool() const; // new
+  explicit operator double() const; // new
+
   static dd_real rand(void);
 
   void to_digits(char *s, int &expn, int precision = _ndigits) const;
