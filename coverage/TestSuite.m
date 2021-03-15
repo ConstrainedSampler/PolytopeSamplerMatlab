@@ -2,14 +2,11 @@ classdef TestSuite < handle
     properties
         printFormat
         problemFilter
+        problems = [];
         debug = 0
         nCores = +Inf % +Inf means default number of cores
         randomSeed = 0 % 0 means do not fix randomSeed
         testFunc % function for testing 
-    end
-    
-    properties(Access = private)
-        problemName
     end
     
     methods
@@ -28,7 +25,6 @@ classdef TestSuite < handle
                 'netlib/pds_20$', 'netlib/qap12$', 'netlib/osa_60$', 'netlib/cre_b$', ...
                 'netlib/cre_d$','netlib/ken_18$','netlib/dfl001$','netlib/pds_10$', ...
                 'basic/random_dense@\d\d\d\d', 'basic/random_sparse@\d\d\d', 'basic/birkhoff@\d\d\d\d'};
-            
             o.problemFilter.fileSizeLimit = [0 120000];
         end
         
@@ -37,13 +33,13 @@ classdef TestSuite < handle
             output.tag = 'TestSuite';
             output.logFunc = @(tag, msg, varargin) TestSuite.output(tag, msg, varargin{:});
             output.header();
-            % TODO
-            l = problemList(o.problemFilter);
+            if isempty(o.problems)
+                o.problems = problemList(o.problemFilter);
+            end
             success = 0; total_time = 0;
             
-            o.problemName = l;
             if (o.debug || o.nCores == 1)
-                for k = 1:length(l)
+                for k = 1:length(o.problems)
                     ret = o.runStep(k);
                     output.print(ret);
                     
@@ -56,7 +52,7 @@ classdef TestSuite < handle
                     parpool('local', o.nCores);
                 end
                 
-                parfor k = 1:length(l)
+                parfor k = 1:length(o.problems)
                     ret = o.runStep(k);
                     output.print(ret);
                     
@@ -65,18 +61,23 @@ classdef TestSuite < handle
                 end
             end
             
-            fprintf('%i/%i success\n', success, length(l))
+            fprintf('%i/%i success\n', success, length(o.problems))
             fprintf('Total time: %f\n', total_time)
         end
     end
     
     methods(Access = private)
         function ret = runStep(o, id)
-            name = o.problemName{id};
+            name = o.problems{id};
             
             if o.randomSeed ~= 0, rng(o.randomSeed); end
             warning('off', 'MATLAB:nearlySingularMatrix');
             warning('off', 'MATLAB:singularMatrix');
+            warning('off', 'uniformtest:size');
+            warning('off', 'stats:adtest:OutOfRangePLow');
+            warning('off', 'stats:adtest:OutOfRangePHigh');
+            warning('off', 'stats:adtest:SmallSampleSize');
+            warning('off', 'stats:adtest:NotEnoughData');
             
             t = tic;
             if (o.debug)
@@ -102,13 +103,3 @@ classdef TestSuite < handle
         end
     end
 end
-
-% TODO: remove these after testing
-% warning('off', 'MATLAB:nearlySingularMatrix');
-% warning('off', 'MATLAB:singularMatrix');
-% warning('off', 'stats:adtest:OutOfRangePLow');
-% warning('off', 'stats:adtest:OutOfRangePHigh');
-% warning('off', 'stats:adtest:SmallSampleSize');
-% warning('off', 'stats:adtest:NotEnoughData');
-% warning('off', 'unifScaleTest:size');
-% warning('off', 'unifScaleTest:nonzero_grad');

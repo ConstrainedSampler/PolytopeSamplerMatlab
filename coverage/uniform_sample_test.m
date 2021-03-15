@@ -1,12 +1,18 @@
-function uniform_sample_test
+function uniform_sample_test(debug, folder, problems)
 s = TestSuite;
+if nargin >= 2 && ~isempty(folder)
+    s.problemFilter.folder = folder;
+end
+if nargin >= 3 && ~isempty(problems)
+    s.problems = problems;
+end
 s.randomSeed = 123456;
 s.nCores = +Inf;
-s.debug = 0;
+s.debug = debug;
 s.printFormat.m = '8i';
 s.printFormat.n = '8i';
 s.printFormat.nnz = '10i';
-s.printFormat.mixing = '12f';
+s.printFormat.mixing = '15f';
 s.printFormat.pVal = '10f';
 s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
@@ -17,11 +23,6 @@ s.test();
 end
 
 function o = test_func(name, num_samples)
-warning('off', 'PolytopeSampler:uniformtest:size');
-warning('off', 'stats:adtest:OutOfRangePLow');
-warning('off', 'stats:adtest:OutOfRangePHigh');
-warning('off', 'stats:adtest:SmallSampleSize');
-warning('off', 'stats:adtest:NotEnoughData');
 
 % load the problem and truncate it to make it bounded
 P = loadProblem(name);

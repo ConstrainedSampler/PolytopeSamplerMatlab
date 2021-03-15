@@ -103,6 +103,7 @@ for i = 1:length(opts.module)
 end
 
 o = s.output;
+o.summary = summary(o.samples);
 % if (o.done == false)
 %     o.ess = effective_sample_size(o.samples);
 %     o.nSamples = min(o.ess);

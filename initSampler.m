@@ -4,7 +4,20 @@ addpath(genpath(fullfile('code')));
 addpath(fullfile('coverage'));
 addpath(fullfile('coverage', 'problems'));
 
-if ((nargin == 1 && recompile) || exist('CSolver_double') ~= 3)
+% check if the solver exists
+if (~(nargin == 1 && recompile) && exist('CSolver_double') == 3)
+    try
+        x = CSolver_double('init', uint64(randi(2^32-1,'uint32')), speye(3));
+        CSolver_double('delete', x);
+        recompile = false;
+    catch
+        recompile = true;
+    end
+else
+    recompile = true;
+end
+
+if (recompile)
     [path,~,~] = fileparts(mfilename('fullpath'));
     path = fullfile(path, 'code', 'solver');
     
