@@ -7,25 +7,21 @@ classdef MexSolver < handle
         
         % private
         uid
-        uid2
         initialized = false
         precision
     end
     
+    % Okay, the simd version simply do it one by one
+    % w is a matrix k by n
+    % b is a matrix k by n by ??
+    % b, w, x0
+    
     methods
         % precision is either double or doubledouble
         function o = MexSolver(A, precision)
-            if nargin < 2, precision = 'double'; end
-            
             o.A = A;
             o.uid = PackedChol('init', uint64(randi(2^32-1,'uint32')), A);
-            if (strcmp(precision,'double'))
-                PackedChol('setAccuracyTarget', o.uid, 1e-6);
-            elseif (strcmp(precision,'doubledouble'))
-                PackedChol('setAccuracyTarget', o.uid, 0.0);
-            else
-                error('Unsupported precision mode');
-            end
+            PackedChol('setAccuracyTarget', o.uid, precision);
         end
         
         function delete(o)
@@ -34,11 +30,11 @@ classdef MexSolver < handle
         
         function setScale(o, w)
             o.initialized = true;
-            if ~all(w == o.w) || (numel(w) ~= numel(o.w))
+            if ~all(w == o.w)
                 PackedChol('decompose', o.uid, w);
+                o.w = w;
             end
             
-            o.w = w;
             o.w_solve = w;
         end
         
@@ -63,6 +59,10 @@ classdef MexSolver < handle
             sigma = PackedChol('leverageScoreComplement', o.uid, nSketch);
         end
         
+        function counts = getDecomposeCount(o)
+            counts = PackedChol('getDecomposeCount', o.uid);
+        end
+        
         function y2 = approxSolve(o, b)
             assert(o.initialized);
             
@@ -77,6 +77,7 @@ classdef MexSolver < handle
             x = batch_pcg(x0, b, o, 1e-12, 20);
         end
         
+        % used only in batch_pcg
         function y = AwAt(o, b)
             assert(o.initialized);
             

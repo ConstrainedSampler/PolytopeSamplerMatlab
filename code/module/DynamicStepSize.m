@@ -29,21 +29,16 @@ classdef DynamicStepSize < handle
         end
         
         function o = propose(o)
-            if o.sampler.prob > 0.7 && o.sampler.ODEStep < o.sampler.opts.maxODEStep
-                o.stableX = o.sampler.x;
-                o.stableV = o.sampler.v;
-            end
+            %stable = o.sampler.prob > 0.7 & o.sampler.ODEStep < o.sampler.opts.maxODEStep;
+            %o.stableX = stable.*o.sampler.x + (1-stable).*o.stableX;
+            %o.stableV = stable.*o.sampler.v + (1-stable).*o.stableV;
         end
         
         function o = step(o)
             s = o.sampler;
             
-            if s.prob < 0.5 || s.ODEStep == s.opts.maxODEStep
-                o.consecutiveBadStep = o.consecutiveBadStep + 1;
-            else
-                o.consecutiveBadStep = 0;
-            end
-            
+            bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
+            o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;
             o.iterSinceShrink = o.iterSinceShrink + 1;
             o.rejectSinceShrink = o.rejectSinceShrink + 1-s.prob;
             o.ODEStepSinceShrink = o.ODEStepSinceShrink + s.ODEStep;
@@ -54,16 +49,16 @@ classdef DynamicStepSize < handle
                 shiftedIter = o.iterSinceShrink + 20 / (1-s.momentum);
 
                 targetProbability = (1-s.momentum)^(2/3) / 2;
-                if (o.rejectSinceShrink > targetProbability  * shiftedIter)
-                    shrink = sprintf('Failure Probability is %.4f, which is larger than the target %.4f', o.rejectSinceShrink / o.iterSinceShrink, targetProbability);
+                if (max(o.rejectSinceShrink) > targetProbability  * shiftedIter)
+                    shrink = sprintf('Failure Probability is %.4f, which is larger than the target %.4f', max(o.rejectSinceShrink) / o.iterSinceShrink, targetProbability);
                 end
 
-                if (o.consecutiveBadStep > o.opts.maxConsecutiveBadStep)
-                    shrink = sprintf('Consecutive %i Bad Steps', o.consecutiveBadStep);
+                if (max(o.consecutiveBadStep) > o.opts.maxConsecutiveBadStep)
+                    shrink = sprintf('Consecutive %i Bad Steps', max(o.consecutiveBadStep));
                 end
                 
-                if (o.ODEStepSinceShrink > o.opts.targetODEStep * shiftedIter)
-                    shrink = sprintf('ODE solver requires %.4f steps in average, which is larger than the target %.4f', o.ODEStepSinceShrink / o.iterSinceShrink, o.opts.targetODEStep);
+                if (max(o.ODEStepSinceShrink) > o.opts.targetODEStep * shiftedIter)
+                    shrink = sprintf('ODE solver requires %.4f steps in average, which is larger than the target %.4f', max(o.ODEStepSinceShrink) / o.iterSinceShrink, o.opts.targetODEStep);
                 end
 
                 if ischar(shrink)
@@ -86,9 +81,9 @@ classdef DynamicStepSize < handle
                 end
 
                 o.iterSinceShrink = o.iterSinceShrink + 1;
-            elseif o.consecutiveBadStep > o.opts.maxConsecutiveBadStep
-                s.x = mean(s.samples, 2);
-                s.v = s.ham.resample(s.x, zeros(size(s.x)), 0);
+            elseif max(o.consecutiveBadStep) > o.opts.maxConsecutiveBadStep
+                s.x = ones(size(s.samples,1),1) * mean(s.samples, [1 3]);
+                s.v = s.ham.resample(s.x, zeros(size(s.x)));
                 s.log('DynamicStepSize:step', 'Sampler reset to the center gravity due to consecutive bad steps.\n');
                 
                 o.iterSinceShrink = 0;

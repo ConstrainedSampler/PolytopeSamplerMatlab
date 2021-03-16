@@ -10,7 +10,6 @@ classdef DebugLogger < handle
             o.startTime = tic();
             sampler.output.acceptedStep = 0;
             sampler.output.totalStep = 0;
-            sampler.output.averageLinearSystemAccuracy = 0;
         end
         
         function o = initialize(o)
@@ -25,14 +24,15 @@ classdef DebugLogger < handle
             s = o.sampler;
             s.output.acceptedStep = s.output.acceptedStep + s.accept;
             s.output.totalStep = s.output.totalStep + 1;
-            s.output.averageLinearSystemAccuracy = 0.9 * s.output.averageLinearSystemAccuracy + 0.1 * o.sampler.ham.accuracy;
         end
         
         function o = finalize(o)
-            o.sampler.output.sampleTime = toc(o.startTime) - o.sampler.output.prepareTime;
-            o.sampler.output.sampler = o.sampler;
+            s = o.sampler;
+            s.output.nChol = s.ham.solver.getDecomposeCount();
+            s.output.sampleTime = toc(o.startTime) - o.sampler.output.prepareTime;
+            s.output.sampler = o.sampler;
             
-            if o.sampler.terminate == 3
+            if s.terminate == 3
                 save('dump.mat');
             end
         end

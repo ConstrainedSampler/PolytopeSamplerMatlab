@@ -8,14 +8,16 @@ function [ess] = effective_sample_size(x)
 %Output:
 % ess - a dim x 1 vector where ess(i) is the effective sample size of x(i,:).
 
-n = size(x, 2);
-n_even = n - mod(n,2);
-ess = zeros(size(x,1), 1);
+s = size(x);
+N = s(end);
+Neven = N - mod(N,2);
+l = prod(s(1:end-1));
+ess = zeros(l, 1);
+x = reshape(x, [l, N]);
 
-for i = 1:size(x,1)
+for i = 1:l
     % normalize i-th row
     x_ = x(i,:);
-    
     m = mean(x_); 
     x_ = x_ - m;
     
@@ -23,11 +25,13 @@ for i = 1:size(x,1)
     x_ = x_ / sqrt(v);
     
     % compute autocorrelation via Wiener–Khinchin theorem
-    r = ifft(abs(fft(x_,2*n)).^2); % power spectral density
-    ac = real(r(1:n_even))/n; % ess formula assume vector length is even
+    r = ifft(abs(fft(x_,2*N)).^2); % power spectral density
+    ac = real(r(1:Neven))/N; % ess formula assume vector length is even
     
     % Geyer's monotone estimator
     minAC = cummin(ac(:, 1:2:end) + ac(:, 2:2:end));
-    ess(i) = n/max(1,2*sum(minAC.*(minAC>0)) -1);
+    ess(i) = N/max(1,2*sum(minAC.*(minAC>0)) -1);
 end
+
+ess = reshape(ess, [s(1:end-1) 1]);
 end

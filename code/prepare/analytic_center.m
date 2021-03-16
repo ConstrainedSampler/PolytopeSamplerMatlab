@@ -42,18 +42,33 @@ if exist('x', 'var') == 0 || isempty(x) || ~f.barrier.feasible(x)
     x = f.barrier.center;
 end
 lambda = zeros(size(A,2),1);
-fullStep = 0;
+fullStep = 0; tConst = 0;
 primalErr = Inf; dualErr = Inf; primalErrMin = Inf;
 primalFactor = 1; dualFactor = 1 + norm(b);
 idx = [];
 solver = Solver(A, 'doubledouble');
 
 %% find the central path
-rx = lambda - f.gradient(x);
 for iter = 1:opts.ipmMaxIter
-    % compute the step direction
+    [grad, hess] = f.analytic_center_oracle(x);
+    
+    % compute the residual
+    rx = lambda - grad;
     rs = b - A * x;
-    Hinv = 1./f.hessian(x);
+    
+    % check stagnation
+    primalErrMin = min(primalErr,primalErrMin); primalErr = norm(rx)/primalFactor;
+    dualErrLast = dualErr; dualErr = norm(rs)/dualFactor;
+    feasible = f.barrier.feasible(x);
+    if (((dualErr > (1-0.9*tConst)*dualErrLast) && (primalErr > 10 * primalErrMin)) || ~feasible)
+        % tight constraints condition: ||grad(x)||_2 > 1/distanceTol, (x is close boundary)
+        dist = f.barrier.boundary_distance(x);
+        idx = find(dist < opts.ipmDistanceTol);
+        if ~isempty(idx), break; end
+    end
+    
+    % compute the step direction
+    Hinv = 1./hess;
     solver.setScale(Hinv);
     dr1 = A' * solver.solve(rs); dr2 = A' * solver.solve(A * (Hinv .* rx));
     dx1 = Hinv .* (dr1);
@@ -66,47 +81,17 @@ for iter = 1:opts.ipmMaxIter
     tConst = min(0.99*f.barrier.step_size(x, dx),1);
     tGrad = tGrad * tConst;
     
-    % update weight
-    if opts.weightedBarrier
-        if iter == 1
-            f.barrier.weight = max(solver.leverageScoreComplement(),1e-6);
-        else
-            overage = solver.leverageScoreComplement() ./ f.barrier.weight;
-            f.barrier.weight(overage > 2) = min(1, f.barrier.weight(overage > 2) * 2);
-        end
-    end
+    % make the step
+    x = x + tConst * dx;
+    lambda = lambda - dr2;
     
-    if f.barrier.feasible(x + tConst * dx) % this is due to rounding error
-        x = x + tConst * dx;
-        lambda = lambda - dr2;
-    
-        % compute the residual
-        rx = lambda - f.gradient(x);
-        rs = b - A * x;
-        primalErrMin = min(primalErr,primalErrMin); primalErr = norm(rx)/primalFactor;
-        dualErrLast = dualErr; dualErr = norm(rs)/dualFactor;
-    else
-        dualErr = +Inf;
-        primalErr = +Inf;
-        dualErrLast = 0;
-    end
-    
-    % check stagnation
-    if ((dualErr > (1-0.9*tConst)*dualErrLast) && (primalErr > 10 * primalErrMin))
-        % tight constraints condition: ||grad(x)||_2 > 1/distanceTol, (x is close boundary)
-        dist = f.barrier.boundary_distance(x);
-        idx = find(dist < opts.ipmDistanceTol);
-    end
+    if ~f.barrier.feasible(x), break; end
     
     % printout
     o = struct('iter', iter, 't', tGrad, 'primalErr', primalErr, 'dualErr', dualErr);
     output.print(o);
     
-    % stopping criteria 
-    if ~f.barrier.feasible(x) || ~isempty(idx)
-        break;
-    end
-    
+    % stop if converged
     if (tGrad == 1)
         fullStep = fullStep + 1;
         if (fullStep > log(dualErr/opts.ipmDualTol) && fullStep > 8)
@@ -126,8 +111,6 @@ if ~isempty(idx)
     [A_, b_] = f.barrier.boundary(x);
     C = A_(idx,:);
     d = b_(idx);
-    note = sprintf('fixed %i barriers', length(idx));
-    o = struct('iter', 0, 't', 0, 'primalErr', 0, 'dualErr', 0, 'note', note);
 else
     C = zeros(0, size(A,2));
     d = zeros(0, 1);

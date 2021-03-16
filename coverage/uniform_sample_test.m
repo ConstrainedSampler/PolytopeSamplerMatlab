@@ -1,7 +1,7 @@
-function uniform_sample_test(debug, folder, problems)
+function uniform_sample_test(debug, folders, problems, num_samples)
 s = TestSuite;
-if nargin >= 2 && ~isempty(folder)
-    s.problemFilter.folder = folder;
+if nargin >= 2 && ~isempty(folders)
+    s.problemFilter.folders = folders;
 end
 if nargin >= 3 && ~isempty(problems)
     s.problems = problems;
@@ -18,7 +18,7 @@ s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
 s.printFormat.nStep = '10i';
 s.printFormat.avgAcc = '15.3e';
-s.testFunc = @(name) test_func(name, 200);
+s.testFunc = @(name) test_func(name, num_samples);
 s.test();
 end
 

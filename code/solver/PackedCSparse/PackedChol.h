@@ -36,7 +36,8 @@ struct PackedChol
 	SparseMatrix<Tx, Ti> At;
 	Tx2* w;
 	Tx accuracyThreshold = 1e-6;
-	std::vector<size_t> exactIdx; // indices we perform high precision calculation
+	std::vector<size_t> exactIdx; // k size array. Indices we perform high precision calculation
+	std::vector<size_t> numExact; // number of times we perform high precision decompose (length k+1, the last one records how many times we do decompose)
 
 	// preprocess info for different CSparse operations (PackedDouble)
 	MultiplyOutput<Tx2, Ti> H; // cache for H = A W A'
@@ -56,6 +57,7 @@ struct PackedChol
 		A = std::move(A_.clone());
 		At = transpose(A);
 		w = new Tx2[A.n];
+		numExact.resize(k + 1);
 	}
 
 	~PackedChol()
@@ -88,6 +90,7 @@ struct PackedChol
 			w[j] = w_in[j];
 
 		// compute chol
+		++numExact[k];
 		if (accuracyThreshold > 0.0)
 		{
 			multiply(H, A, w, At);
@@ -114,6 +117,7 @@ struct PackedChol
 
 			for (size_t i : exactIdx)
 			{
+				++numExact[i];
 				get_slice(w_exact, w, n, i);
 				multiply(H_exact, A, w_exact, At);
 				chol(L_exact, H_exact);

@@ -38,7 +38,7 @@ classdef ProgressBar < handle
         end
         
         function o = step(o)
-            o.acceptedStep = o.acceptedStep + o.sampler.accept;
+            o.acceptedStep = o.acceptedStep + sum(o.sampler.accept);
             if toc(o.lastRefresh) < o.refreshInterval, return, end
             o.refresh_bar();
         end
@@ -53,7 +53,7 @@ classdef ProgressBar < handle
                 nSamples = 0;
                 timeRemain = Inf;
             else
-                nSamples = floor(s.i / s.mixingTime);
+                nSamples = floor(s.i / s.mixingTime * size(s.samples,1));
                 progress = min(1, nSamples / s.N);
                 timeRemain = timeSpent / progress * (1-progress);
             end

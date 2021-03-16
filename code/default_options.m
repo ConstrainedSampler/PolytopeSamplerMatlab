@@ -4,7 +4,7 @@ function opts = default_options()
     
     % Linear System Options
     opts.nSketch = 0;
-    opts.crudeSolverThreshold = 1e-6;
+    opts.solverThreshold = 1e-6;
     opts.extraHessian = 1e-20;
     
     % ODE Options
@@ -20,6 +20,7 @@ function opts = default_options()
     opts.effectiveStepSize = 1;
     opts.initalStepSize = 0.2;
     opts.freezeMCMCAfterSamples = 100;
+    opts.nChains = 1;%4;
     
     % Logging options
     opts.logFunc = @(tag, msg) 0;%fprintf('%s', msg);

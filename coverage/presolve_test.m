@@ -1,7 +1,7 @@
-function presolve_test(debug, folder, problems)
+function presolve_test(debug, folders, problems)
 s = TestSuite;
-if nargin >= 2 && ~isempty(folder)
-    s.problemFilter.folder = folder;
+if nargin >= 2 && ~isempty(folders)
+    s.problemFilter.folders = folders;
 end
 if nargin >= 3 && ~isempty(problems)
     s.problems = problems;

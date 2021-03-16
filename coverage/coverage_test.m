@@ -1,7 +1,7 @@
-debug = 1;
+debug = 0;
 problems = [];
-folder = {'basic', 'metabolic', 'netlib'};
-%folder = {'basic', 'metabolic', 'netlib', 'extra'};
+folders = {'basic', 'metabolic', 'netlib'};
+%folders = {'basic', 'metabolic', 'netlib', 'extra'};
 
-presolve_test(debug, folder, problems)
-uniform_sample_test(debug, folder, problems)
+presolve_test(debug, folders, problems)
+uniform_sample_test(debug, folders, problems, 200)

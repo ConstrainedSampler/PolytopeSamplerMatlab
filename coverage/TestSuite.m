@@ -21,10 +21,9 @@ classdef TestSuite < handle
             %% Setup the problem lists
             o.problemFilter = struct;
             o.problemFilter.ignoreProblems = ...
-                {'netlib/pilot87$', 'netlib/fit1p$', 'netlib/fit2p$', 'netlib/qap15$', ...
-                'netlib/pds_20$', 'netlib/qap12$', 'netlib/osa_60$', 'netlib/cre_b$', ...
-                'netlib/cre_d$','netlib/ken_18$','netlib/dfl001$','netlib/pds_10$', ...
-                'basic/random_dense@\d\d\d\d', 'basic/random_sparse@\d\d\d', 'basic/birkhoff@\d\d\d\d'};
+                {'extra/fit1p$', 'extra/fit2p$', ... %matlab can't solve it
+                'basic/random_dense@\d\d\d\d', 'basic/random_sparse@\d\d\d', 'basic/birkhoff@\d\d\d\d', ... % problem too large
+                };
             o.problemFilter.fileSizeLimit = [0 120000];
         end
         

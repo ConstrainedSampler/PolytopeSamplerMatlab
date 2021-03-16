@@ -24,6 +24,8 @@ defaults.tol = 1e-8;
 opts = setfield(defaults, opts);
 P = o.polytope.originalProblem;
 x = thin_samples(o.samples);
+s = size(o.samples); l = prod(s(1:end-1));
+x = reshape(x, [l, s(end)]);
 dim = o.polytope.n - size(o.polytope.A, 1);
 
 if size(x,2) < 10
@@ -33,7 +35,7 @@ end
 p = x(:,1);
 x = x(:,2:end);
 
-if sum(abs(P.df(x(:,end)))) ~= 0
+if ~isempty(P.df)
     warning('PolytopeSampler:uniformtest:nonUniform', 'The density of the distribution should be uniform, namely, df = 0.');
 end
 

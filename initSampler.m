@@ -8,7 +8,7 @@ addpath(fullfile('coverage', 'problems'));
 % check if the solver exists
 if (~(nargin == 1 && recompile) && exist('PackedChol') == 3)
     try
-        uid = PackedChol('init', speye(3));
+        uid = PackedChol('init', uint64(123), speye(3));
         PackedChol('delete', uid);
         recompile = false;
     catch
@@ -31,7 +31,7 @@ if (recompile)
     compiler = mex.getCompilerConfigurations('C++','Selected').ShortName;
     if (contains(compiler, 'MSVCPP'))
         mex_string = ...
-            'mex -R2018a -silent -g -I"%libpath" COMPFLAGS="$COMPFLAGS /O2 /arch:AVX2 /GL"';
+            'mex -R2018a -silent -g -I"%libpath" COMPFLAGS="$COMPFLAGS /O2 /arch:AVX2"';
     elseif (contains(compiler, 'Clang++'))
         mex_string = ...
             'mex -R2018a -silent -O -I"%libpath" CFLAGS="$CFLAGS -march=native"';

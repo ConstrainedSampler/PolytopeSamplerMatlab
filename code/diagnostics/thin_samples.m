@@ -10,6 +10,15 @@ function [y] = thin_samples(x)
 % y - a dim x ess(x) vector.
 
 ess = effective_sample_size(x);
-gap = size(x,2)/min(ess);
+gap = size(x,2)/min(ess, [], 'all');
+
+% reshape it to sth x N
+s = size(x);
+N = s(end); l = prod(s(1:end-1));
+x = reshape(x, [l, N]);
+
 y = x(:, ceil(0.1*size(x,2):gap:size(x,2)));
+
+% reshape the thinned sample back
+y = reshape(y, [s(1:end-1), numel(y)/l]);
 end

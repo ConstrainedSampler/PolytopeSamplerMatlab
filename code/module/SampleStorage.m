@@ -29,7 +29,7 @@ classdef SampleStorage < handle
                     h = min(h, 2 * len/o.opts.minNumRecords);
                     h = ceil(h);
                     idx = ceil(h*(1:floor(len / h))) + (len - ceil(h * floor(len / h)));
-                    s.samples = s.samples(:, idx);
+                    s.samples = s.samples(:, :, idx);
                     s.iterPerRecord = s.iterPerRecord * h;
                 end
             end

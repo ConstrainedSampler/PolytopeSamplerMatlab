@@ -63,10 +63,6 @@ int main()
             auto w = env::inputArray<double>(n_);
             solver->decompose(w);
         }
-        else if (!strcmp(cmd, "setAccuracyTarget"))
-        {
-			solver->accuracyThreshold = env::inputScalar<double>();
-        }
         else if (!strcmp(cmd, "leverageScoreComplement"))
         {
             auto k = (size_t)env::inputScalar<double>(), n_ = n * chol_k;
@@ -98,6 +94,14 @@ int main()
             size_t k = (size_t)env::inputScalar<double>(0.0);
 			auto L = solver->getL(k);
             env::outputSparseArray(L);
+        }
+        else if (!strcmp(cmd, "setAccuracyTarget"))
+        {
+            solver->accuracyThreshold = env::inputScalar<double>();
+        }
+        else if (!strcmp(cmd, "getDecomposeCount"))
+        {
+            env::outputDoubleArray(solver->numExact.data(), chol_k + 1);
         }
         else if (!strcmp(cmd, "delete"))
         {

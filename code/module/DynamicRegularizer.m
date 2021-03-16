@@ -14,11 +14,11 @@ classdef DynamicRegularizer < handle
         
         function o = initialize(o)
             o.sampler.ham.barrier.extraHessian = 1;
-            o.setBound(max(abs(o.sampler.x), 1));
+            o.setBound(max(max(abs(o.sampler.x),[],1), 1));
         end
         
         function o = propose(o)
-            o.setBound(max(o.bound, abs(o.sampler.x)));
+            o.setBound(max(o.bound, max(abs(o.sampler.x),[],1)));
         end
         
         function o = step(o)

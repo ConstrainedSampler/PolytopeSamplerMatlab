@@ -26,15 +26,15 @@ classdef MixingTimeEstimator < handle
             s = o.sampler;
             if s.i > o.nextEstimateIter
                 o.ess = effective_sample_size(s.samples);
-                s.mixingTime = s.iterPerRecord * size(s.samples,2) / min(o.ess);
-                lastEstNumSamples = s.i / s.mixingTime;
+                s.mixingTime = s.iterPerRecord * size(s.samples,3) / min(o.ess, [], 'all');
+                lastEstNumSamples = (s.i / s.mixingTime) * size(s.samples,1);
                 
                 if lastEstNumSamples > s.N
                     s.terminate = 1;
                     s.log('sample:end', '%i samples found.\n', lastEstNumSamples);
                 end
                 
-                estimateEndingIter = s.i + (s.N - lastEstNumSamples) * s.mixingTime;
+                estimateEndingIter = s.i + (s.N - lastEstNumSamples) * (s.mixingTime / size(s.samples,1));
                 o.nextEstimateIter = min(o.nextEstimateIter * o.opts.iterMultiplier, estimateEndingIter);
             end
         end
