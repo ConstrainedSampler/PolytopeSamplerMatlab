@@ -24,7 +24,7 @@ defaults.tol = 1e-8;
 opts = setfield(defaults, opts);
 P = o.polytope.originalProblem;
 x = thin_samples(o.samples);
-s = size(o.samples); l = prod(s(1:end-1));
+s = size(x); l = prod(s(1:end-1));
 x = reshape(x, [l, s(end)]);
 dim = o.polytope.n - size(o.polytope.A, 1);
 

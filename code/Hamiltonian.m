@@ -72,7 +72,7 @@ classdef Hamiltonian < handle
         function E = H(o, x, v)
             o.prepare(x)
             K = 0.5 * sum(v .* o.DK(x, v),2);
-            U = 0.5 * (o.solver.logdet() + sum(log(o.hess)));
+            U = 0.5 * (o.solver.logdet() + sum(log(o.hess),2));
             U = U + o.fx;
             E = U + K;
         end
@@ -145,10 +145,11 @@ classdef Hamiltonian < handle
         
         function move(o, x, forceUpdate)
             if nargin == 2, forceUpdate = false; end
+            if ~all(size(o.x) == size(x)), return; end
             if ~forceUpdate && all(o.x == x, 'all'), return; end
             
-            r = o.feasible(x);
-            o.x = r .* x + (1-r) .* o.x; % only move to x if it is feasible
+            
+            o.x = x;
             [o.fx, o.dfx, ddfx] = o.P.f_oracle(x);
             o.hess = o.barrier.hessian(x) + ddfx;
             o.prepared = false;

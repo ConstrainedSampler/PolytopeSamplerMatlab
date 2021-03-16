@@ -18,7 +18,7 @@ x = reshape(x, [l, N]);
 for i = 1:l
     % normalize i-th row
     x_ = x(i,:);
-    m = mean(x_); 
+    m = mean(x_);
     x_ = x_ - m;
     
     v = mean(x_.^2) + 1e-16 * abs(m).^2; % Avoid dividing by 0

@@ -9,7 +9,7 @@ function opts = default_options()
     
     % ODE Options
     opts.odeMethod = @implicit_midpoint;
-    opts.maxODEStep = 20;
+    opts.maxODEStep = 30;
     opts.implicitTol = 1e-5;
     
     % Termination Conditions
@@ -20,7 +20,7 @@ function opts = default_options()
     opts.effectiveStepSize = 1;
     opts.initalStepSize = 0.2;
     opts.freezeMCMCAfterSamples = 100;
-    opts.nChains = 1;%4;
+    opts.nChains = 4;
     
     % Logging options
     opts.logFunc = @(tag, msg) 0;%fprintf('%s', msg);
@@ -41,7 +41,7 @@ function opts = default_options()
     opts.SampleStorage = struct;
     opts.SampleStorage.recordsPerIndependentSample = 5;
     opts.SampleStorage.minNumRecords = 1000;
-    opts.SampleStorage.rawOutput = false;
+    opts.SampleStorage.outputFormat = 'combine';
     
     % Presolve Options
     opts.runSimplify = true;

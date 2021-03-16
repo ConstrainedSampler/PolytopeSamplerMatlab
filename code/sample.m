@@ -53,13 +53,17 @@ while true
     s.H1 = s.ham.H(s.x, s.v_);
     [s.x_, s.v_, s.ODEStep] = opts.odeMethod(s.x, s.v_, s.stepSize, s.ham, opts);
     s.feasible = s.ham.feasible(s.x_, s.v_);
+    for i = 1:length(opts.module)
+        s.module{i}.propose();
+    end
+    
     s.H2 = s.ham.H(s.x_, -s.v_);
     s.prob = min(1, exp(s.H1-s.H2)) .* s.feasible;
     
     % rejection
     s.accept = (rand(opts.nChains, 1) < s.prob);
-    s.x = s.accept .* s.x_ + (1-s.accept) .* s.x;
-    s.v = s.accept .* s.v_ + (1-s.accept) .* (-s.v);
+    s.x = blendv(s.x, s.x_, s.accept);
+    s.v = blendv(-s.v, s.v_, s.accept);
     
     if (~all(s.accept))
         s.log('sample:reject', 'rejected chain ' + join(string(num2str(find(~[1;0;0;1]))),',') + '\n');
@@ -91,4 +95,3 @@ for i = 1:length(opts.module)
 end
 
 o = s.output;
-o.summary = summary(o.samples);

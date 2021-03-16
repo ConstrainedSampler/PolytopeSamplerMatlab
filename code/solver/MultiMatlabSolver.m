@@ -14,12 +14,12 @@ classdef MultiMatlabSolver < handle
             o.m = size(A,2);
             o.n = size(A,1);
             for i = 1:o.k
-                o.solvers{i} = MatlabSolver(A, precision);
+                %o.solvers{i} = MatlabSolver(A, precision);
+                o.solvers{i} = MexSolver(A, precision);
             end
         end
         
         function setScale(o, w)
-            w = reshape(w, [o.k, o.m]);
             o.w = w;
             for i = 1:o.k
                 o.solvers{i}.setScale(reshape(w(i,:), [o.m, 1]));
@@ -52,9 +52,7 @@ classdef MultiMatlabSolver < handle
         end
         
         function y = approxSolve(o, b)
-            l = numel(b)/(o.k*o.n);
-            b = reshape(b, [o.k, o.n, l]);
-            
+            l = size(b,3);
             y = zeros(o.k, o.n, l);
             for i = 1:o.k
                 b_ = reshape(b(i,:,:), [o.n, l]);
@@ -63,8 +61,7 @@ classdef MultiMatlabSolver < handle
         end
         
         function x = solve(o, b, w, x0)
-            l = numel(b)/(o.k*o.n);
-            b = reshape(b, [o.k, o.n, l]);
+            l = size(b,3);
             if nargin < 4
                 x0 = zeros([o.k, o.n, l]);
             else

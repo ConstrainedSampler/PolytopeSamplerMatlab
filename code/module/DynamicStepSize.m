@@ -76,7 +76,7 @@ classdef DynamicStepSize < handle
 
                     if s.stepSize < o.opts.minStepSize
                         s.log('warning', 'Algorithm fails to converge even with step size h = %f.\n', s.stepSize);
-                        s.terminate = true;
+                        s.terminate = 3;
                     end
                 end
 

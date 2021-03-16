@@ -44,16 +44,16 @@ classdef ProgressBar < handle
         end
         
         function o = refresh_bar(o)
-            s = o.sampler;
+            s = o.sampler; k = size(s.samples,1);
             o.lastRefresh = tic;
-            prob = o.acceptedStep / s.i;
+            prob = (o.acceptedStep/k) / s.i;
             timeSpent = toc(o.startTime);
             if isnan(s.mixingTime) || s.mixingTime <= 0.5
                 progress = 0;
                 nSamples = 0;
                 timeRemain = Inf;
             else
-                nSamples = floor(s.i / s.mixingTime * size(s.samples,1));
+                nSamples = floor(s.i / s.mixingTime * k);
                 progress = min(1, nSamples / s.N);
                 timeRemain = timeSpent / progress * (1-progress);
             end
