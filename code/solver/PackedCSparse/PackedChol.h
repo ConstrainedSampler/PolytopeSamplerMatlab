@@ -228,27 +228,26 @@ struct PackedChol
 		return std::move(out);
 	}
 
-	template <size_t k>
 	void solve(Tx2* b, Tx2* out)
 	{
 		if (!allExact())
 		{
-			lsolve(L, (FloatArray<Tx2, k>*)b, (FloatArray<Tx2, k>*)out);
-			ltsolve(L, (FloatArray<Tx2, k>*)out, (FloatArray<Tx2, k>*)out);
+			lsolve(L, b, out);
+			ltsolve(L, out, out);
 		}
 
 		if (hasExact())
 		{
 			Ti m = A.m;
-			Te* b_exact = new Te[m * k];
-			Te* out_exact = new Te[m * k];
+			Te* b_exact = new Te[m];
+			Te* out_exact = new Te[m];
 
 			for (size_t i : exactIdx)
 			{
-				get_slice(b_exact, b, m * k, i);
-				lsolve(Le[i], (FloatArray<Te, k>*)b_exact, (FloatArray<Te, k>*)out_exact);
-				ltsolve(Le[i], (FloatArray<Te, k>*)out_exact, (FloatArray<Te, k>*)out_exact);
-				set_slice(out, out_exact, m * k, i);
+				get_slice(b_exact, b, m, i);
+				lsolve(Le[i], b_exact, out_exact);
+				ltsolve(Le[i], out_exact, out_exact);
+				set_slice(out, out_exact, m, i);
 			}
 
 			delete[] b_exact;
@@ -284,15 +283,14 @@ struct PackedChol
 		}
 	}
 
-	template<size_t k>
-	void leverageScoreComplementJL(Tx2* out)
+	void leverageScoreComplementJL(Tx2* out, size_t k)
 	{
 		Ti m = A.m, n = A.n;
 
 		if (!allExact())
 		{
 			Tx2 T1 = Tx2(1.0), T2 = Tx2(2.0);
-			leverageJL<k>(diagPJL, L, A, At);
+			leverageJL(diagPJL, L, A, At, k);
 
 			Tx2* tau = diagPJL.x.get();
 			for (Ti j = 0; j < n; j++)
@@ -304,7 +302,7 @@ struct PackedChol
 			Te T1 = Te(1.0), T2 = Te(2.0);
 			for (size_t i : exactIdx)
 			{
-				leverageJL<k>(diagPJL_exact, Le[i], A, At);
+				leverageJL(diagPJL_exact, Le[i], A, At, k);
 
 				Te* tau = diagPJL_exact.x.get();
 				for (Ti j = 0; j < n; j++)
@@ -315,6 +313,6 @@ struct PackedChol
 
 	Tx2 estimateAccuracy()
 	{
-		return cholAccuracy<1>(diagPJL, L, A, At, w);
+		return cholAccuracy(diagPJL, L, A, At, w);
 	}
 };

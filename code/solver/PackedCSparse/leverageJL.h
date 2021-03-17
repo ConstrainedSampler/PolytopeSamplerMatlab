@@ -4,41 +4,37 @@
 
 // Problem:
 // Approximate M = diag(A' inv(LL') A)
-
 namespace PackedCSparse {
+	const size_t JLPackedSize = 4;
+
 	template<typename Tx, typename Ti>
 	struct LeverageJLOutput : DenseVector<Tx, Ti>
 	{
 		std::unique_ptr<Tx[]> d;		// random direction d
 		std::unique_ptr<Tx[]> L_d;		// random direction d
 		std::unique_ptr<Tx[]> AtL_d;	// A' L^{-1} d
-		Ti k = 0, m = 0;
+		Ti m = 0;
 		std::mt19937_64 gen;
 
 		template<typename Tx2>
-		void initialize(const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, Ti k_)
+		void initialize(const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At)
 		{
 			pcs_assert(L.initialized() && A.initialized() && At.initialized(), "leverageJL: bad inputs.");
-			pcs_assert(k_ >= 1 && L.m == L.n && L.n == A.m && L.n == At.n && A.n == At.m, "leverageJL: dimensions mismatch.");
-
-			if (k_ > k || A.m > this->m || A.n > this->n)
-			{
-				this->k = k_; this->n = A.n; this->m = A.m;
-				this->x.reset(new Tx[this->n]);
-				this->d.reset(new Tx[this->m * this->k]);
-				this->L_d.reset(new Tx[this->m * this->k]);
-				this->AtL_d.reset(new Tx[this->n * this->k]);
-			}
+			pcs_assert(L.m == L.n && L.n == A.m && L.n == At.n && A.n == At.m, "leverageJL: dimensions mismatch.");
+			this->n = A.n; this->m = A.m;
+			this->x.reset(new Tx[this->n]);
+			this->d.reset(new Tx[this->m * 2 * JLPackedSize]);
+			this->L_d.reset(new Tx[this->m * 2 * JLPackedSize]);
+			this->AtL_d.reset(new Tx[this->n * 2 * 2 * JLPackedSize]);
 		}
 	};
 
-	// compute 1/k sum_j (A' L^{-T} u_j) .* (A' L^{-T} v_j)
+	// compute sum_{j=1}^{k} (A' L^{-T} u_j) .* (A' L^{-T} v_j)
 	// if diffProj, v and u are different random {+-1}. Otherwise v = u
 	template<bool diffProj, size_t k, typename Tx, typename Ti, typename Tx2>
 	void projectionJL(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At)
 	{
 		constexpr Ti k_ = k * (1 + diffProj);
-		o.initialize(L, A, At, k_);
 
 		Ti m = A.m, n = A.n;
 		Tx T0 = Tx(0.0), T1 = Tx(1.0);
@@ -50,39 +46,60 @@ namespace PackedCSparse {
 		for (Ti i = 0; i < n * k_; i++)
 			AtL_d[i] = T0;
 
-		ltsolve(L, (FloatArray<Tx, k_>*)d, (FloatArray<Tx, k_>*)L_d);
-		gaxpy(At, (FloatArray<Tx, k_>*)L_d, (FloatArray<Tx, k_>*)AtL_d);
+		ltsolve(L, (BaseImpl<Tx, k_>*)d, (BaseImpl<Tx, k_>*)L_d);
+		gaxpy(At, (BaseImpl<Tx, k_>*)L_d, (BaseImpl<Tx, k_>*)AtL_d);
 
-		Tx ratio = T1 / Tx(double(k));
 		for (Ti i = 0; i < n; i++)
 		{
 			Tx ret_i = T0;
 			for (Ti j = 0; j < k; j++)
 				ret_i += AtL_d[i * k_ + j] * AtL_d[i * k_ + j + k * diffProj];
 
-			x[i] = ratio * ret_i;
+			x[i] += ret_i;
 		}
 	}
 
-	template<size_t k, typename Tx, typename Ti, typename Tx2>
-	void leverageJL(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At)
+	template<bool diffProj, typename Tx, typename Ti, typename Tx2>
+	void projectionJL(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, size_t k)
 	{
-		projectionJL<false, k>(o, L, A, At);
+		if (!o.initialized())
+			o.initialize(L, A, At);
+
+		Ti n = A.n; Tx* x = o.x.get();
+		for (Ti i = 0; i < n; i++)
+			x[i] = Tx(0.0);
+
+		constexpr size_t k_step = JLPackedSize / (1 + diffProj);
+		for(size_t i = 1; i <= k / k_step; i++)
+			projectionJL<diffProj, k_step>(o, L, A, At);
+
+		for (size_t i = 1; i <= k % k_step; i++)
+			projectionJL<diffProj, 1>(o, L, A, At);
 	}
 
-	template<size_t k, typename Tx, typename Ti, typename Tx2>
-	LeverageJLOutput<Tx, Ti> leverageJL(const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At)
+	template<typename Tx, typename Ti, typename Tx2>
+	void leverageJL(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, size_t k)
+	{
+		projectionJL<false>(o, L, A, At, k);
+
+		Ti n = o.n; Tx* x = o.x.get();
+		Tx ratio = 1 / Tx(double(k));
+		for (Ti i = 0; i < n; i++)
+			x[i] *= ratio;
+	}
+
+	template<typename Tx, typename Ti, typename Tx2>
+	LeverageJLOutput<Tx, Ti> leverageJL(const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, size_t k)
 	{
 		LeverageJLOutput<Tx, Ti> o;
-		leverageJL<k>(o, L, A, At);
+		leverageJL(o, L, A, At, k);
 		return o;
 	}
 
-	template<size_t k, typename Tx, typename Ti, typename Tx2>
-	Tx cholAccuracy(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, const Tx* w)
+	template<typename Tx, typename Ti, typename Tx2>
+	Tx cholAccuracy(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, const Tx* w, size_t k = 1)
 	{
-		const Ti k_ = ((k & 1) == 1)?2*k:k; // I need even k so that FloatType<double, 2> is never called. 
-		projectionJL<true, k_>(o, L, A, At);
+		projectionJL<true>(o, L, A, At, k);
 
 		Ti m = A.m, n = A.n;
 		Tx* x = o.x.get();
@@ -94,14 +111,13 @@ namespace PackedCSparse {
 		Tx ret2 = Tx(0.0);
 		for (Ti i = 0; i < m; i++)
 		{
-			Tx* d = o.d.get() + i * (2 * k_);
-			for (Ti j = 0; j < k_; j++)
-				ret2 += d[j] * d[j + k_];
+			Tx* d = o.d.get() + i * (2 * k);
+			for (Ti j = 0; j < k; j++)
+				ret2 += d[j] * d[j + k];
 
 		}
-		ret2 = ret2 / Tx(double(k_));
 
-		Tx dist = (ret1 - ret2) * Tx(sqrt(double(k_)));
+		Tx dist = (ret1 - ret2) / Tx(sqrt(double(k)));
 		return abs(dist);
 	}
 }

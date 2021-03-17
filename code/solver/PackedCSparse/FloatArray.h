@@ -10,7 +10,7 @@ struct BaseImpl
 
 	BaseImpl() {};
 
-	BaseImpl(const T& rhs)
+	BaseImpl(const T &rhs)
 	{
 		for (size_t i = 0; i < k; i++)
 			x[i] = rhs;
@@ -103,28 +103,25 @@ struct BaseImpl
 		return out;
 	}
 
-	template<size_t k2>
-	static void fmadd(BaseImpl& a, const BaseImpl& b, const BaseImpl<T, k2>& c)
+	static void fmadd(BaseImpl& a, const BaseImpl& b, const BaseImpl& c)
 	{
 		for (size_t i = 0; i < k; i++)
 			a.x[i] += b.x[i] * c.x[i % k2];
 	}
 
-	template<size_t k2>
-	static void fnmadd(BaseImpl& a, const BaseImpl<T, k>& b, const BaseImpl<T, k2>& c)
+	static void fnmadd(BaseImpl& a, const BaseImpl& b, const BaseImpl& c)
 	{
 		for (size_t i = 0; i < k; i++)
 			a.x[i] -= b.x[i] * c.x[i % k2];
 	}
 
-	static void fmadd(BaseImpl& a, const BaseImpl<T, k>& b, T c)
+	static void fmadd(BaseImpl& a, const BaseImpl& b, const T& c)
 	{
 		for (size_t i = 0; i < k; i++)
 			a.x[i] += b.x[i] * c;
 	}
 
-	template<size_t k2>
-	static void fnmadd(BaseImpl& a, const BaseImpl<T, k>& b, T c)
+	static void fnmadd(BaseImpl& a, const BaseImpl& b, const T& c)
 	{
 		for (size_t i = 0; i < k; i++)
 			a.x[i] -= b.x[i] * c;
@@ -159,7 +156,7 @@ struct BaseImpl
 };
 
 template <typename T>
-struct BaseImpl<T, 1>
+struct BaseScalarImpl
 {
 	static T get(const T& x, size_t index)
 	{
@@ -176,16 +173,14 @@ struct BaseImpl<T, 1>
 		return abs(x);
 	}
 
-	template <typename T2>
-	static void fmadd(T& a, const T& b, const T2& c)
+	static void fmadd(T& a, const T& b, const T& c)
 	{
-		a += b * T(c);
+		a += b * c;
 	}
 
-	template <typename T2>
-	static void fnmadd(T& a, const T& b, const T2& c)
+	static void fnmadd(T& a, const T& b, const T& c)
 	{
-		a -= b * T(c);
+		a -= b * c;
 	}
 
 	static T clipped_sqrt(const T& x, const T& nonpos_output)
@@ -324,20 +319,6 @@ struct m256dArray
 		return out;
 	}
 
-	template<size_t k2>
-	static void fmadd(m256dArray& a, const m256dArray& b, const m256dArray<k2>& c)
-	{
-		for (size_t i = 0; i < k; i++)
-			a.x[i] = _mm256_fmadd_pd(b.x[i], c.x[i % k2], a.x[i]);
-	}
-
-	template<size_t k2>
-	static void fnmadd(m256dArray& a, const m256dArray& b, const m256dArray<k2>& c)
-	{
-		for (size_t i = 0; i < k; i++)
-			a.x[i] = _mm256_fnmadd_pd(b.x[i], c.x[i % k2], a.x[i]);
-	}
-
 	static void fmadd(m256dArray& a, const m256dArray& b, const double& c)
 	{
 		auto cx = _mm256_set1_pd(c);
@@ -350,6 +331,18 @@ struct m256dArray
 		auto cx = _mm256_set1_pd(c);
 		for (size_t i = 0; i < k; i++)
 			a.x[i] = _mm256_fnmadd_pd(b.x[i], cx, a.x[i]);
+	}
+
+	static void fmadd(m256dArray& a, const m256dArray& b, const m256dArray& c)
+	{
+		for (size_t i = 0; i < k; i++)
+			a.x[i] = _mm256_fmadd_pd(b.x[i], c.x[i], a.x[i]);
+	}
+
+	static void fnmadd(m256dArray& a, const m256dArray& b, const m256dArray& c)
+	{
+		for (size_t i = 0; i < k; i++)
+			a.x[i] = _mm256_fnmadd_pd(b.x[i], c.x[i], a.x[i]);
 	}
 
 	static m256dArray clipped_sqrt(const m256dArray& x, const double nonpos_output)
@@ -394,15 +387,15 @@ template <typename T, size_t k>
 struct FloatTypeSelector
 {
 	using type = typename std::conditional<k == 1, T, BaseImpl<T, k>>::type;
-	using funcImpl = BaseImpl<T, k>;
+	using funcImpl = typename std::conditional<k == 1, BaseScalarImpl<T>, BaseImpl<T, k>>::type;
 };
 
 template <size_t k>
 struct FloatTypeSelector<double, k>
 {
-	static_assert(k == 1 || k == 2 || k % 4 == 0, "Array<double,k> assumes k = 1 or a multiple of 4");
+	static_assert(k == 1 || k % 4 == 0, "Array<double,k> assumes k = 1 or a multiple of 4");
 	using type = typename std::conditional< k == 1, double, m256dArray<k / 4>>::type;
-	using funcImpl = typename std::conditional< k == 1, BaseImpl<double, 1>, m256dArray<k / 4>>::type;
+	using funcImpl = typename std::conditional< k == 1, BaseScalarImpl<double>, m256dArray<k / 4>>::type;
 };
 
 template <size_t k, size_t l>
@@ -410,6 +403,13 @@ struct FloatTypeSelector<m256dArray<k>, l>
 {
 	using type = m256dArray<k*l>;
 	using funcImpl = m256dArray<k* l>;
+};
+
+template <typename T, size_t k, size_t l>
+struct FloatTypeSelector<BaseImpl<T, k>, l>
+{
+	using type = BaseImpl<T, k* l>;
+	using funcImpl = BaseImpl<T, k* l>;
 };
 
 template<typename T, size_t k = 1>

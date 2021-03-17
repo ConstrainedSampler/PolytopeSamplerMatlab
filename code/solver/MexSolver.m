@@ -66,7 +66,7 @@ classdef MexSolver < handle
         function y2 = approxSolve(o, b)
             assert(o.initialized);
             
-            y2 = PackedChol('solve', o.uid, b')';
+            y2 = PackedChol('solve', o.uid, b);
         end
         
         function x = solve(o, b, w, x0)

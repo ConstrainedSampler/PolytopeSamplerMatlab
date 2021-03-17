@@ -52,30 +52,22 @@ classdef MultiMatlabSolver < handle
         end
         
         function y = approxSolve(o, b)
-            l = size(b,3);
-            y = zeros(o.k, o.n, l);
+            y = zeros(o.k, o.n);
             for i = 1:o.k
-                b_ = reshape(b(i,:,:), [o.n, l]);
-                y(i,:,:) = o.solvers{i}.approxSolve(b_);
+                y(i,:) = o.solvers{i}.approxSolve(b(i,:)');
             end
         end
         
         function x = solve(o, b, w, x0)
-            l = size(b,3);
             if nargin < 4
-                x0 = zeros([o.k, o.n, l]);
-            else
-                x0 = reshape(x0, [o.k, o.n, l]);
+                x0 = zeros([o.k, o.n]);
             end
-            if nargin < 3, w = o.w; end
-            w = reshape(w, [o.k, o.m]);
             
-            x = zeros(o.k, o.n, l);
+            if nargin < 3, w = o.w; end
+            
+            x = zeros(o.k, o.n);
             for i = 1:o.k
-                b_ = reshape(b(i,:,:), [o.n, l]);
-                x0_ = reshape(x0(i,:,:), [o.n, l]);
-                w_ = reshape(w(i,:), [o.m, 1]);
-                x(i,:,:) = o.solvers{i}.solve(b_, w_, x0_);
+                x(i,:,:) = o.solvers{i}.solve(b(i,:)', w(i,:)', x0(i,:)');
             end
         end
         
