@@ -61,7 +61,6 @@ classdef MixingTimeEstimator < handle
             s.totalNumSamples = o.estNumSamples + o.estNumSamplesOutside;
             if s.totalNumSamples > s.N
                 s.share('estNumSamples', o.estNumSamples);
-                %disp(labindex)
                 s.terminate = 1;
                 s.log('sample:end', '%i samples found.\n', s.totalNumSamples);
             end

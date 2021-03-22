@@ -1,28 +1,10 @@
 function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sampler
     startTime = tic;
-    s = Sampler;
-    s.problem = problem;
-    s.opts = opts;
-    s.seed = opts.seed;
-    s.nWorkers = nWorkers;
+    opts.N = N;
+    s = Sampler(problem, polytope, nWorkers, opts);
     if (s.nWorkers > 1)
-        s.labindex = labindex;
         everyOneElse = 1:nWorkers;
         everyOneElse(labindex) = [];
-        s.lastBroadcast = tic;
-        for i = 1:opts.nWorkers
-            s.shared{i} = struct;
-        end
-    else
-        s.labindex = 1;
-    end
-    rng(opts.seed, 'simdTwister');
-    s.N = N;
-    s.polytope = polytope;
-    s.output.polytope = s.polytope;
-    opts.module = unique([{'MixingTimeEstimator', 'SampleStorage'}, opts.module], 'stable');
-    for i = 1:length(opts.module)
-        s.module{end+1} = feval(opts.module{i}, s);
     end
     
     %% Sample
@@ -84,6 +66,7 @@ function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sam
         
         if (s.nWorkers > 1)
             % receive
+            assert(numel(s.shared) == 6);
             updated = false; terminateReceived = false;
             while (labProbe)
                 [data,idx,~] = labReceive;
@@ -109,7 +92,7 @@ function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sam
                 break;
             end
 
-            % broadcast
+            % sent to everyone else
             if (toc(s.lastBroadcast) > opts.broadcastInterval && s.logUpdated)
                 labSend(s.shareLog, everyOneElse);
                 s.logUpdated = false;
@@ -118,10 +101,8 @@ function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sam
         end
         s.i = s.i + 1;
     end
-
-    for i = 1:length(opts.module)
-        s.module{i}.finalize();
-    end
+    
+    s.finalize();
     
     o = s.output;
     o.sampleTime = toc(startTime);

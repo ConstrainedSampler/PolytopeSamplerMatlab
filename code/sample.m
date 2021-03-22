@@ -19,6 +19,15 @@ if (nargin <= 2)
     opts = default_options();
 end
 compile_solver(0); compile_solver(opts.simdLen); 
+if ischar(opts.logging) || isstring(opts.logging)
+    fid = fopen(opts.logging, 'a');
+    opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg);
+elseif ~isempty(opts.logging)
+    opts.logFunc = opts.logging;
+else
+    opts.logFunc = @(tag, msg) 0;
+end
+
 opts.startTime = t;
 outputFormat = opts.outputFormat;
 
@@ -26,6 +35,9 @@ outputFormat = opts.outputFormat;
 rng(opts.seed, 'simdTwister');
 polytope = Polytope(problem, opts);
 prepareTime = toc(tic);
+if ischar(opts.logging) || isstring(opts.logging)
+    fclose(fid);
+end
 
 %% Set up workers if nWorkers ~= 1
 if opts.nWorkers ~= 1
@@ -47,9 +59,16 @@ if opts.nWorkers ~= 1
     seeds = randi(intmax('uint32'), nWorkers, 1, 'uint32');
     
     spmd(nWorkers)
+        if opts.profiling
+            mpiprofile on
+        end
         opts.seed = seeds(labindex);
         opts.labindex = labindex;
         workerOutput = sample_inner(problem, N, opts, polytope, nWorkers);
+        
+        if opts.profiling
+            mpiprofile viewer
+        end
     end
     
     o = struct;
@@ -70,7 +89,13 @@ if opts.nWorkers ~= 1
 else
     opts.seed = randi(intmax('uint32'), 'uint32');
     opts.labindex = 1;
+    if opts.profiling
+        profile on
+    end
     o = sample_inner(problem, N, opts, polytope, 1);
+    if opts.profiling
+        profile report
+    end
 end
 
 if ~strcmp(outputFormat,'raw')
@@ -87,3 +112,4 @@ if ~strcmp(outputFormat,'raw')
     o.mixingRecord = nRecord / ess;
 end
 o.prepareTime = prepareTime;
+o.polytope = polytope;

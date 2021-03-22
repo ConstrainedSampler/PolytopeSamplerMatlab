@@ -5,7 +5,7 @@ function opts = default_options()
     
     % Linear System Options
     opts.nSketch = 0;
-    opts.solverThreshold = 1e-6;
+    opts.solverThreshold = 1e-2;
     opts.extraHessian = 1e-20;
     
     % ODE Options
@@ -22,11 +22,12 @@ function opts = default_options()
     opts.initalStepSize = 0.2;
     opts.freezeMCMCAfterSamples = 100;
     opts.simdLen = 4;
-    opts.nWorkers = 0;
+    opts.nWorkers = 1;
     opts.broadcastInterval = 0.5;
     
     % Logging options
-    opts.logFunc = @(tag, msg, o) 0;
+    opts.logging = []; % either a file name or a logging function of the form @(tag, msg, o) ...
+    opts.profiling = false;
     
     % Module options
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
