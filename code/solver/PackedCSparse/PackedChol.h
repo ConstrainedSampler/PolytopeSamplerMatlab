@@ -34,11 +34,13 @@ struct PackedChol
 	// parameters
 	SparseMatrix<Tx, Ti> A;
 	SparseMatrix<Tx, Ti> At;
-	Tx2* w;
+	UniqueAlignedPtr<Tx2> w;
 	Tx accuracyThreshold = 1e-6;
+	Tx2 lastAccuracy;
 	std::vector<size_t> exactIdx; // k size array. Indices we perform high precision calculation
 	std::vector<size_t> numExact; // number of times we perform high precision decompose (length k+1, the last one records how many times we do decompose)
-
+	bool decomposed = false;
+	
 	// preprocess info for different CSparse operations (PackedDouble)
 	MultiplyOutput<Tx2, Ti> H; // cache for H = A W A'
 	CholOutput<Tx2, Ti> L; // cache for L = chol(H)
@@ -56,13 +58,8 @@ struct PackedChol
 	{
 		A = std::move(A_.clone());
 		At = transpose(A);
-		w = new Tx2[A.n];
+		w.reset(pcs_aligned_new<Tx2>(A.n));
 		numExact.resize(k + 1);
-	}
-
-	~PackedChol()
-	{
-		delete[] w;
 	}
 
 	void setSeed(unsigned long long seed)
@@ -91,16 +88,17 @@ struct PackedChol
 
 		// compute chol
 		++numExact[k];
-		if (accuracyThreshold > 0.0)
+		if (accuracyThreshold > 0.0 || !decomposed) // the first time we call, always run the double chol.
 		{
-			multiply(H, A, w, At);
+			multiply(H, A, w.get(), At);
 			chol(L, H);
-
+			decomposed = true;
+			
 			exactIdx.clear();
-			Tx2 err = estimateAccuracy();
+			lastAccuracy = estimateAccuracy();
 			for (size_t i = 0; i < k; i++)
 			{
-				if (get(err, i) > accuracyThreshold)
+				if (get(lastAccuracy, i) >= accuracyThreshold) // >= is important for the case accuracyThreshold = 0.0, we need to compute everything exactly
 					exactIdx.push_back(i);
 			}
 		}
@@ -118,7 +116,7 @@ struct PackedChol
 			for (size_t i : exactIdx)
 			{
 				++numExact[i];
-				get_slice(w_exact, w, n, i);
+				get_slice(w_exact, w.get(), n, i);
 				multiply(H_exact, A, w_exact, At);
 				chol(L_exact, H_exact);
 
@@ -137,8 +135,10 @@ struct PackedChol
 		}
 	}
 
-	Tx logdet()
+	Tx2 logdet()
 	{
+		pcs_assert(decomposed, "logdet: Need to call decompose first.");
+		
 		Ti m = A.m;
 		Tx2 ret = Tx2(0);
 
@@ -151,10 +151,9 @@ struct PackedChol
 
 		if (hasExact())
 		{
-			Te ret_e = 0.0;
-
 			for (size_t i : exactIdx)
 			{
+				Te ret_e = 0.0;
 				Ti* Lp = Le[i].p.get(); Te* Lx = Le[i].x.get();
 
 				for (Ti j = 0; j < m; j++)
@@ -169,6 +168,8 @@ struct PackedChol
 
 	void diagL(Tx2* out)
 	{
+		pcs_assert(decomposed, "diagL: Need to call decompose first.");
+		
 		Ti m = A.m;
 
 		if (!allExact())
@@ -192,6 +193,8 @@ struct PackedChol
 
 	SparseMatrix<double, Ti> getL(Ti i)
 	{
+		pcs_assert(decomposed, "getL: Need to call decompose first.");
+		
 		Ti m = L.m, n = L.n, nz = L.nnz();
 		SparseMatrix<double, Ti> out(m, n, nz);
 
@@ -230,6 +233,8 @@ struct PackedChol
 
 	void solve(Tx2* b, Tx2* out)
 	{
+		pcs_assert(decomposed, "solve: Need to call decompose first.");
+		
 		if (!allExact())
 		{
 			lsolve(L, b, out);
@@ -257,6 +262,8 @@ struct PackedChol
 
 	void leverageScoreComplement(Tx2* out)
 	{
+		pcs_assert(decomposed, "leverageScoreComplement: Need to call decompose first.");
+		
 		Ti n = A.n, m = A.m;
 
 		if (!allExact())
@@ -285,6 +292,8 @@ struct PackedChol
 
 	void leverageScoreComplementJL(Tx2* out, size_t k)
 	{
+		pcs_assert(decomposed, "leverageScoreComplementJL: Need to call decompose first.");
+		
 		Ti m = A.m, n = A.n;
 
 		if (!allExact())
@@ -313,6 +322,8 @@ struct PackedChol
 
 	Tx2 estimateAccuracy()
 	{
-		return cholAccuracy(diagPJL, L, A, At, w);
+		pcs_assert(decomposed, "estimateAccuracy: Need to call decompose first.");
+		
+		return cholAccuracy(diagPJL, L, A, At, w.get(), 2);
 	}
 };

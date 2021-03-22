@@ -12,7 +12,7 @@ namespace PackedCSparse {
 	template <typename Tx, typename Ti>
 	struct MultiplyOutput : SparseMatrix<Tx, Ti>
 	{
-		std::unique_ptr<Tx[]> c;
+		UniqueAlignedPtr<Tx> c;
 
 		template<typename Tx2>
 		void initialize(const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& B)
@@ -24,11 +24,14 @@ namespace PackedCSparse {
 			Ti* Ap = A.p.get(), * Ai = A.i.get();
 			Ti* Bp = B.p.get(), * Bi = B.i.get();
 
-			this->c.reset(new Tx[m]()); // initialize to 0
+			this->c.reset(pcs_aligned_new<Tx>(m));
 
 			Ti* last_j = new Ti[m];
 			for (Ti i = 0; i < m; i++)
+			{
 				last_j[i] = -1;
+				this->c[i] = Tx(0.0);
+			}
 
 			Ti* Cp = new Ti[size_t(n)+1];
 			std::vector<Ti> Ci;
@@ -57,7 +60,7 @@ namespace PackedCSparse {
 				std::sort(Ci.begin() + Cp[j], Ci.begin() + Cp[j + 1]);
 
 			this->m = m; this->n = n;
-			this->x.reset(new Tx[Ci.size()]);
+			this->x.reset(pcs_aligned_new<Tx>(Ci.size()));
 			this->p.reset(Cp);
 			this->i.reset(new Ti[Ci.size()]);
 			std::copy(Ci.begin(), Ci.end(), this->i.get());

@@ -115,16 +115,15 @@ classdef Polytope < handle
             %% Simplify the polytope
             if o.opts.runSimplify
                 o.simplify();
+                
+                if isempty(o.center)
+                    o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
+                    o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
+                end
+                o.rescale(o.center);
+                o.shift_barrier(o.center);
             else
                 o.reorder();
-            end
-            
-            %% Find an initial point
-            if ~isempty(P.center)
-                o.center = P.center;
-            elseif ~isempty(o.center)
-                o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
-                o.center = analytic_center(o.A, o.b, o, o.opts, o.barrier.center);
             end
             
             %% Give Warning for Unbounded Polytope
@@ -252,17 +251,36 @@ classdef Polytope < handle
             o.updateT();
         end
         
-        function rescale(o)
+        function rescale(o, x)
             % Rescale the problem so it is in a better numerical form.
             
             % do not rescale if A has zero or one contraints/variables
             if min(size(o.A)) <= 1, return; end
             
-            [cscale,rscale] = gmscale(o.A, 0, 0.9);
+            if nargin == 1 || isempty(x)
+                hess = ones(size(o.A,2), 1);
+            else
+                [~, hess] = o.analytic_center_oracle(x);
+            end
+            
+            [cscale,rscale] = gmscale(o.A./sqrt(hess)', 0, 0.9);
             o.A = spdiag(1./rscale) * o.A;
             o.b = o.b./rscale;
             o.barrier.update(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
             o.append_map(spdiag(1./cscale));
+            
+            if ~isempty(o.center)
+                o.center = o.center .* cscale;
+            end
+        end
+        
+        function shift_barrier(o, x)
+            o.append_map(speye(numel(x)), x);
+            o.barrier.update(o.barrier.lb - x, o.barrier.ub - x);
+            
+            if ~isempty(o.center)
+                o.center = o.center - x;
+            end
         end
         
         function remove_fixed_variables(o)

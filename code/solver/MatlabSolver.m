@@ -9,8 +9,9 @@ classdef MatlabSolver < handle
         initialized = false
         L
         precision
-        usingExact = false;
-        numExact;
+        usingExact = false
+        numExact
+        accuracy
         exactSolver
     end
     
@@ -35,7 +36,7 @@ classdef MatlabSolver < handle
             o.A = A;
             o.precision = precision;
             o.numExact = zeros(2,1);
-            o.exactSolver = MexSolver(A, 0.0);
+            o.exactSolver = MexSolver(A, 0.0, 0);
         end
         
         function err = estimateAccuracy(o)
@@ -57,8 +58,8 @@ classdef MatlabSolver < handle
                     if p~= 0
                         o.usingExact = true;
                     else
-                        err = o.estimateAccuracy();
-                        if (isnan(err) || err > o.precision)
+                        o.accuracy = o.estimateAccuracy();
+                        if (isnan(o.accuracy) || o.accuracy > o.precision)
                             o.usingExact = true;
                         end
                     end

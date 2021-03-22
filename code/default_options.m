@@ -1,6 +1,7 @@
 function opts = default_options()
     opts = struct;
     opts.seed = 'shuffle';
+    opts.outputFormat = 'combine'; % separate or combine
     
     % Linear System Options
     opts.nSketch = 0;
@@ -15,15 +16,17 @@ function opts = default_options()
     % Termination Conditions
     opts.maxTime = 3600;
     opts.maxStep = +Inf;
-    
+	
     % HMC options
     opts.effectiveStepSize = 1;
     opts.initalStepSize = 0.2;
     opts.freezeMCMCAfterSamples = 100;
-    opts.nChains = 4;
+    opts.simdLen = 4;
+    opts.nWorkers = 0;
+    opts.broadcastInterval = 0.5;
     
     % Logging options
-    opts.logFunc = @(tag, msg) 0;%fprintf('%s', msg);
+    opts.logFunc = @(tag, msg, o) 0;
     
     % Module options
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
@@ -41,7 +44,6 @@ function opts = default_options()
     opts.SampleStorage = struct;
     opts.SampleStorage.recordsPerIndependentSample = 5;
     opts.SampleStorage.minNumRecords = 1000;
-    opts.SampleStorage.outputFormat = 'combine';
     
     % Presolve Options
     opts.runSimplify = true;

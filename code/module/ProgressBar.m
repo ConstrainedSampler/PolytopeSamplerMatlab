@@ -5,10 +5,11 @@ classdef ProgressBar < handle
         
         startTime
         acceptedStep = 0;
-        lastDisplayLength = 0
+        nextBackspaceLength
         barLength = 25
         nSamplesTextLength = 12
         nSamplesFieldLength = 12
+        nBackspacePerPrint
         
         refreshInterval = 0.2
         lastRefresh
@@ -19,14 +20,24 @@ classdef ProgressBar < handle
             o.sampler = sampler;
             o.startTime = tic;
             o.lastRefresh = tic;
-            sampler.acceptedStep = 0;
+            o.acceptedStep = 0;
             if (sampler.N ~= Inf)
                 o.nSamplesTextLength = max(length(num2str(sampler.N)*2),3);
                 o.nSamplesFieldLength = 2 * o.nSamplesTextLength + 1;
             end
             
-            fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
-            fprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Samples', 'AccRate', 'StepSize', 'MixTime');
+            if sampler.labindex == 1
+                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
+                s = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Samples', 'AccRate', 'StepSize', 'MixTime');
+                disp(s);
+                
+                if (sampler.nWorkers > 1)
+                    o.nBackspacePerPrint = 3;
+                else
+                    o.nBackspacePerPrint = 1;
+                end
+                o.nextBackspaceLength = o.nBackspacePerPrint;
+            end
         end
         
         function o = initialize(o)
@@ -40,7 +51,9 @@ classdef ProgressBar < handle
         function o = step(o)
             o.acceptedStep = o.acceptedStep + sum(o.sampler.accept);
             if toc(o.lastRefresh) < o.refreshInterval, return, end
-            o.refresh_bar();
+            if o.sampler.labindex == 1
+                o.refresh_bar();
+            end
         end
         
         function o = refresh_bar(o)
@@ -48,12 +61,12 @@ classdef ProgressBar < handle
             o.lastRefresh = tic;
             prob = (o.acceptedStep/k) / s.i;
             timeSpent = toc(o.startTime);
-            if isnan(s.mixingTime) || s.mixingTime <= 0.5
-                progress = 0;
+            avgMixingTime = (size(s.samples,1) * s.nWorkers) / s.sampleRate;
+            if isnan(s.sampleRate)
                 nSamples = 0;
                 timeRemain = Inf;
             else
-                nSamples = floor(s.i / s.mixingTime * k);
+                nSamples = floor(max(s.i * s.sampleRate, s.totalNumSamples));
                 progress = min(1, nSamples / s.N);
                 timeRemain = timeSpent / progress * (1-progress);
             end
@@ -61,20 +74,18 @@ classdef ProgressBar < handle
             timeRemain = min(timeRemain, (s.opts.maxStep - s.i) / s.i * timeSpent);
             progress = timeSpent/(timeRemain+timeSpent);
             
-            if (o.lastDisplayLength ~= 0)
-                fprintf(repmat('\b', 1, o.lastDisplayLength));
-            end
+            str1 = sprintf(repmat('\b', 1, o.nextBackspaceLength));
             
             if (o.sampler.N == Inf)
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesFieldLength, 'i | %8.6f | %8.6f | %8.1f');
-                str = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, prob, s.stepSize, s.mixingTime);
+                str2 = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, prob, s.stepSize, avgMixingTime);
             else
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesTextLength, 'i/%', o.nSamplesTextLength, 'i | %8.6f | %8.6f | %8.1f');
-                str = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, s.N, prob, s.stepSize, s.mixingTime);
+                str2 = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, s.N, prob, s.stepSize, avgMixingTime);
             end
             
-            fprintf(str);
-            o.lastDisplayLength = length(str);
+            disp([str1 str2]);
+            o.nextBackspaceLength = length(str2)+o.nBackspacePerPrint;
 
             function o = durationString(s)
                 if isnan(s) || isinf(s)
@@ -97,9 +108,15 @@ classdef ProgressBar < handle
             end
         end
         
+        function o = sync(o)
+            
+        end
+        
         function o = finalize(o)
-            o.refresh_bar();
-            fprintf('\nDone!\n');
+            if o.sampler.labindex == 1
+                o.refresh_bar();
+                fprintf('\nDone!\n');
+            end
         end
     end
 end

@@ -10,9 +10,9 @@ namespace PackedCSparse {
 	template<typename Tx, typename Ti>
 	struct LeverageJLOutput : DenseVector<Tx, Ti>
 	{
-		std::unique_ptr<Tx[]> d;		// random direction d
-		std::unique_ptr<Tx[]> L_d;		// random direction d
-		std::unique_ptr<Tx[]> AtL_d;	// A' L^{-1} d
+		UniqueAlignedPtr<Tx> d;		// random direction d
+		UniqueAlignedPtr<Tx> L_d;		// random direction d
+		UniqueAlignedPtr<Tx> AtL_d;	// A' L^{-1} d
 		Ti m = 0;
 		std::mt19937_64 gen;
 
@@ -22,10 +22,10 @@ namespace PackedCSparse {
 			pcs_assert(L.initialized() && A.initialized() && At.initialized(), "leverageJL: bad inputs.");
 			pcs_assert(L.m == L.n && L.n == A.m && L.n == At.n && A.n == At.m, "leverageJL: dimensions mismatch.");
 			this->n = A.n; this->m = A.m;
-			this->x.reset(new Tx[this->n]);
-			this->d.reset(new Tx[this->m * 2 * JLPackedSize]);
-			this->L_d.reset(new Tx[this->m * 2 * JLPackedSize]);
-			this->AtL_d.reset(new Tx[this->n * 2 * 2 * JLPackedSize]);
+			this->x.reset(pcs_aligned_new<Tx>(this->n));
+			this->d.reset(pcs_aligned_new<Tx>(this->m * 2 * JLPackedSize));
+			this->L_d.reset(pcs_aligned_new<Tx>(this->m * 2 * JLPackedSize));
+			this->AtL_d.reset(pcs_aligned_new<Tx>(this->n * 2 * 2 * JLPackedSize));
 		}
 	};
 
@@ -83,7 +83,7 @@ namespace PackedCSparse {
 		projectionJL<false>(o, L, A, At, k);
 
 		Ti n = o.n; Tx* x = o.x.get();
-		Tx ratio = 1 / Tx(double(k));
+		Tx ratio = Tx(1 / double(k));
 		for (Ti i = 0; i < n; i++)
 			x[i] *= ratio;
 	}

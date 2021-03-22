@@ -12,7 +12,7 @@ classdef SampleStorage < handle
         
         function o = initialize(o)
             s = o.sampler;
-            s.samples = zeros(s.opts.nChains, size(s.x, 2), 0);
+            s.samples = zeros(s.opts.simdLen, size(s.x, 2), 0);
         end
         
         function o = propose(o)
@@ -36,17 +36,27 @@ classdef SampleStorage < handle
             end
         end
         
+        function o = sync(o)
+            
+        end
+        
         function o = finalize(o)
-            switch o.opts.outputFormat
+            switch o.sampler.opts.outputFormat
                 case 'raw'
                     o.sampler.output.samples = o.sampler.samples;
-                %case 'separate'
-                %    s = size(o.sampler.samples);
-                %    out = permute(o.sampler.samples, [2 3 1]);
-                %    out = reshape(out, [s(2) s(3)*s(1)]);
-                %    out = o.sampler.polytope.T * out + o.sampler.polytope.y;
-                %    out = reshape(out, [s(2) s(3) s(1)]);
-                %    o.sampler.output.samples = permute(out, [3 1 2]);
+                case 'separate'
+                    s = size(o.sampler.samples);
+                    out = permute(o.sampler.samples, [2 3 1]);
+                    out = reshape(out, [s(2) s(3)*s(1)]);
+                    out = o.sampler.polytope.T * out + o.sampler.polytope.y;
+                    n = size(o.sampler.polytope.y, 1);
+                    out = reshape(out, [n s(3) s(1)]);
+                    out = permute(out, [3 1 2]);
+                    out = num2cell(out, [2 3])';
+                    for i = 1:numel(out)
+                        out{i} = reshape(out{i}, [n s(3)]);
+                    end
+                    o.sampler.output.samples = out;
                 case 'combine'
                     s = size(o.sampler.samples);
                     out = permute(o.sampler.samples, [2 3 1]);

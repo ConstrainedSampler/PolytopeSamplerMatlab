@@ -10,6 +10,32 @@ namespace PackedCSparse {
 			throw std::logic_error(message);
 	}
 
+	template <typename T>
+	T* pcs_aligned_new(size_t size)
+	{
+		int alignment = 64; // size of memory cache line
+		int offset = alignment - 1 + sizeof(void*);
+		void* p1 = (void*)new char[size * sizeof(T) + offset];
+		void** p2 = (void**)(((size_t)(p1)+offset) & ~(alignment - 1));
+		p2[-1] = p1;
+		return (T*)p2;
+	}
+
+	template <typename T>
+	struct AlignedDeleter
+	{
+		void operator()(T* p) const
+		{
+			delete[](char*)(((void**)p)[-1]);
+		}
+	};
+
+	template<typename T>
+	using UniqueAlignedPtr = std::unique_ptr<T[], AlignedDeleter<T>>;
+
+	template<typename T>
+	using UniquePtr = std::unique_ptr<T[]>;
+
 	// Tx = Type for entries, Ti = Type for indices.
 	// if Tx == bool, the matrix stores only sparsity information
 	template <typename Tx, typename Ti>
@@ -17,9 +43,9 @@ namespace PackedCSparse {
 	{
 		Ti m = 0;					/* number of rows */
 		Ti n = 0;					/* number of columns */
-		std::unique_ptr<Ti[]> p;	/* column pointers (size n+1) */
-		std::unique_ptr<Ti[]> i;	/* row indices, size nnz */
-		std::unique_ptr<Tx[]> x;	/* numerical values, size nnz */
+		UniquePtr<Ti> p;			/* column pointers (size n+1) */
+		UniquePtr<Ti> i;			/* row indices, size nnz */
+		UniqueAlignedPtr<Tx> x;		/* numerical values, size nnz */
 
 		SparseMatrix() = default;
 
@@ -40,7 +66,7 @@ namespace PackedCSparse {
 			p.reset(new Ti[n + 1]);
 			i.reset(new Ti[nzmax]);
 			if (!std::is_same<Tx, bool>::value)
-				x.reset(new Tx[nzmax]);
+				x.reset(pcs_aligned_new<Tx>(nzmax));
 		}
 
 		Ti nnz() const
@@ -76,7 +102,7 @@ namespace PackedCSparse {
 	struct DenseVector
 	{
 		Ti n = 0;					/* number of columns */
-		std::unique_ptr<Tx[]> x;	/* numerical values, size nnz */
+		UniqueAlignedPtr<Tx> x;		/* numerical values, size nnz */
 
 		DenseVector() = default;
 
@@ -93,7 +119,7 @@ namespace PackedCSparse {
 		void initialize(Ti n_)
 		{
 			n = n_;
-			x.reset(new Tx[n_]);
+			x.reset(pcs_aligned_new<Tx>(n_));
 		}
 	};
 

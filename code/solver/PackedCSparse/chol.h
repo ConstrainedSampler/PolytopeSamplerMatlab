@@ -24,9 +24,9 @@ namespace PackedCSparse {
 	struct CholOutput : SparseMatrix<Tx, Ti>
 	{
 		TransposeOutput<bool, Ti> Lt;	// sparsity pattern of the Lt
-		std::unique_ptr<Ti[]> diag;		// the index for diagonal element. Ax[diag[k]] is A_kk
-		std::unique_ptr<Ti[]> c;		// c[i] = index the last nonzero on column i in the current L
-		std::unique_ptr<Tx[]> w;		// the row of L we are computing
+		UniquePtr<Ti> diag;				// the index for diagonal element. Ax[diag[k]] is A_kk
+		UniquePtr<Ti> c;				// c[i] = index the last nonzero on column i in the current L
+		UniqueAlignedPtr<Tx> w;			// the row of L we are computing
 
 		// The cost of this is roughly 3 times larger than chol
 		// One can optimize it by using other data structure
@@ -40,7 +40,7 @@ namespace PackedCSparse {
 			// initialize
 			this->diag.reset(new Ti[n]);
 			this->c.reset(new Ti[n]);
-			this->w.reset(new Tx[n]);
+			this->w.reset(pcs_aligned_new<Tx>(n));
 
 			// compute the sparsity pattern of L and diag
 			using queue = std::priority_queue<Ti, std::vector<Ti>, std::greater<Ti>>;
@@ -64,7 +64,10 @@ namespace PackedCSparse {
 					q.push(j);
 					mark[j] = i;
 				}
-				this->diag[i] = std::min(s, Anz-1);
+				if (s >= Anz) // this case happens only if the diagonal is 0. No cholesky in this case.
+					this->diag[i] = 0;
+				else
+					this->diag[i] = s;
 
 				// Solve L_11 l_12 = a_12
 				while (!q.empty())

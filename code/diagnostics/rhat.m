@@ -19,7 +19,7 @@ y = x(:, 1: N);
 x = x(:, N+1: 2*N);
 
 b_div_n = var([mean(x, 2), mean(y, 2)], 0, 2);
-w = mean([var(x, 0, 2), var(y, 0, 2)], 2);
+w = mean([var(x, 0, 2), var(y, 0, 2)], 2) + eps;
 
 sig_2p = (N-1)/N .* w + b_div_n;
 

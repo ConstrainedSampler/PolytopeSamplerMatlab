@@ -72,8 +72,8 @@ classdef DynamicStepSize < handle
                     s.stepSize = s.stepSize / o.opts.shrinkFactor;
                     s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
                     
-                    s.log('DynamicStepSize:step', 'Step shrinks to h = %f\n', s.stepSize, shrink);
-
+                    s.log('DynamicStepSize:step', 'Step shrinks to h = %f due to %s\n', s.stepSize, shrink);
+                    
                     if s.stepSize < o.opts.minStepSize
                         s.log('warning', 'Algorithm fails to converge even with step size h = %f.\n', s.stepSize);
                         s.terminate = 3;
@@ -91,6 +91,10 @@ classdef DynamicStepSize < handle
                 o.ODEStepSinceShrink = 0;
                 o.consecutiveBadStep = 0;
             end
+        end
+        
+        function o = sync(o)
+            
         end
         
         function o = finalize(o)

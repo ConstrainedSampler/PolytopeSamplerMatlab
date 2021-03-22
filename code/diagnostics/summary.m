@@ -8,6 +8,9 @@ function smry = summary(spls)
 %Output:
 % smry - a table summarizing the mean and ess and rhat of spls.
 
+if (iscell(spls))
+    spls = cell2mat(spls);
+end
 
 st = std(spls, 0, 2);
 m = mean(spls,2);
@@ -20,6 +23,6 @@ rh = rhat(spls);
 [d, ~] = size(spls);
 
 smry = table(m, st, per25, per50, per75, ess, rh, 'VariableNames',...
-    {'mean','std','25%', '50%', '75%', 'n_ess', 'r_hat'}, ...
+    {'mean','std','25%', '50%', '75%', 'ess', 'r_hat'}, ...
     'RowNames', 'samples['+string(1:d)+']');
 end

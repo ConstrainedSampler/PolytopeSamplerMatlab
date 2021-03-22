@@ -25,6 +25,10 @@ classdef DynamicRegularizer < handle
             
         end
         
+        function o = sync(o)
+            
+        end
+        
         function o = finalize(o)
             
         end

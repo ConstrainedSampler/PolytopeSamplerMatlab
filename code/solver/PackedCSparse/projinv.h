@@ -13,8 +13,8 @@ namespace PackedCSparse {
 	struct ProjinvOutput : SparseMatrix<Tx, Ti>
 	{
 		TransposeOutput<bool, Ti> Lt;	// sparsity pattern of the Lt
-		std::unique_ptr<Tx[]> w;		// the row of L we are computing
-		std::unique_ptr<Ti[]> c;		// c[i] = index the last nonzero on column i in the current L
+		UniqueAlignedPtr<Tx> w;			// the row of L we are computing
+		UniquePtr<Ti> c;				// c[i] = index the last nonzero on column i in the current L
 
 		void initialize(const SparseMatrix<Tx, Ti>& L)
 		{
@@ -26,7 +26,7 @@ namespace PackedCSparse {
 
 			// allocate workspaces
 			Ti n = L.n;
-			w.reset(new Tx[n]);
+			w.reset(pcs_aligned_new<Tx>(n));
 			c.reset(new Ti[n]);
 			Lt = transpose<Tx, Ti, bool>(L);
 		}

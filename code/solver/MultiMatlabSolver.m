@@ -5,6 +5,7 @@ classdef MultiMatlabSolver < handle
         m
         n
         w
+        accuracy
     end
     
     methods
@@ -14,15 +15,16 @@ classdef MultiMatlabSolver < handle
             o.m = size(A,2);
             o.n = size(A,1);
             for i = 1:o.k
-                %o.solvers{i} = MatlabSolver(A, precision);
-                o.solvers{i} = MexSolver(A, precision);
+                o.solvers{i} = MexSolver(A, precision, 0);
             end
         end
         
         function setScale(o, w)
             o.w = w;
+            o.accuracy = zeros(o.k, 1);
             for i = 1:o.k
                 o.solvers{i}.setScale(reshape(w(i,:), [o.m, 1]));
+                o.accuracy(i) = o.solvers{i}.accuracy;
             end
         end
         
@@ -72,7 +74,7 @@ classdef MultiMatlabSolver < handle
         end
         
         function counts = getDecomposeCount(o)
-            counts = zeros(o.k+1);
+            counts = zeros(o.k+1, 1);
             for i = 1:o.k
                 c = o.solvers{i}.getDecomposeCount();
                 counts(i) = c(1);

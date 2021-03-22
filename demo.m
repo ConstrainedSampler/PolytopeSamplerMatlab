@@ -25,7 +25,7 @@ for i=1:d
     P.Aeq(d+i,i:d:d^2)=1;
 end
 
-fid = fopen('demo.log', 'w');
+fid = fopen('demo_ignore.log', 'w');
 opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
 opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg); % Output the debug log to demo.log
@@ -54,6 +54,7 @@ s = thin_samples(o.samples);
 figure;
 histogram(s(:))
 title('Marginal of Gaussian distribution restricted to hypercube');
+drawnow()
 
 %% Example 4: Read a polytope according to Cobra format
 initSampler

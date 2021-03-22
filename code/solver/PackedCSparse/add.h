@@ -14,8 +14,8 @@ namespace PackedCSparse {
 	template <typename Tx, typename Ti>
 	struct AddOutput : SparseMatrix<Tx, Ti>
 	{
-		std::unique_ptr<Ti[]> forwardA;
-		std::unique_ptr<Ti[]> forwardB;
+		UniquePtr<Ti> forwardA;
+		UniquePtr<Ti> forwardB;
 
 		template<typename Tx2>
 		void initialize(const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& B)
@@ -56,7 +56,7 @@ namespace PackedCSparse {
 
 			this->p.reset(Cp);
 			this->i.reset(new Ti[Ci.size()]);
-			this->x.reset(new Tx[Ci.size()]);
+			this->x.reset(pcs_aligned_new<Tx>(Ci.size()));
 			std::copy(Ci.begin(), Ci.end(), this->i.get());
 		}
 	};

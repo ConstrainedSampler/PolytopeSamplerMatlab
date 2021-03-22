@@ -30,7 +30,7 @@ P = loadProblem(name);
 
 %% Test 1: Check if the solution remains the same.
 
-if sum(abs(P.df(randn(size(P.lb))))) == 0
+if isempty(P.df)
     P.df = randn(size(P.lb));
 end
 
@@ -38,7 +38,7 @@ end
 P_opts = default_options();
 P_opts.runSimplify = false;
 P0 = Polytope(P, P_opts);
-df = P0.df(zeros(P0.n, 1));
+df = P0.df;
 
 opts = optimoptions('linprog','Display','none');
 x0 = linprog(P0.T' * df, [], [], P0.A, P0.b, P0.barrier.lb, P0.barrier.ub, opts);
@@ -51,7 +51,7 @@ end
 % simplify the polytope and solve it again
 P_opts.runSimplify = true;
 P1 = Polytope(P, P_opts);
-df = P1.df(zeros(P1.n,1));
+df = P1.df;
 
 x1 = linprog(P1.T' * df, [], [], P1.A, P1.b, P1.barrier.lb, P1.barrier.ub, opts);
 if numel(x1) ~= 0

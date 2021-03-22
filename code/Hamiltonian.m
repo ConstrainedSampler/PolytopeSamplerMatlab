@@ -43,7 +43,7 @@ classdef Hamiltonian < handle
             o.opts = opts;
             o.m = size(P.A,1);
             o.n = size(P.A,2);
-            o.k = opts.nChains;
+            o.k = opts.simdLen;
             o.x = randn(o.k, o.n);
             o.barrier = P.barrier;
             o.solver = Solver(P.A, opts.solverThreshold, o.k);

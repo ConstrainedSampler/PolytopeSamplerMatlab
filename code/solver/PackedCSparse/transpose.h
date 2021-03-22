@@ -11,7 +11,7 @@ namespace PackedCSparse {
 	template <typename Tx, typename Ti>
 	struct TransposeOutput : SparseMatrix<Tx, Ti>
 	{
-		std::unique_ptr<Ti[]> forward;
+		UniquePtr<Ti> forward;
 
 		template<typename Tx2>
 		void initialize(const SparseMatrix<Tx2, Ti>& A)

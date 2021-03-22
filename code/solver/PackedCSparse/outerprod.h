@@ -13,8 +13,8 @@ namespace PackedCSparse {
 	template <typename Tx, typename Ti>
 	struct OuterprodOutput : DenseVector<Tx, Ti>
 	{
-		std::unique_ptr<Tx[]> s_col;
-		std::unique_ptr<Ti[]> s_mark;
+		UniqueAlignedPtr<Tx> s_col;
+		UniquePtr<Ti> s_mark;
 
 		template<typename Tx2>
 		void initialize(const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx, Ti>& S, const SparseMatrix<Tx2, Ti>& B)
@@ -23,7 +23,7 @@ namespace PackedCSparse {
 			pcs_assert(A.m == S.m && S.n == B.n, "outerprod: dimensions mismatch.");
 
 			DenseVector<Tx, Ti>::initialize(A.n);
-			s_col.reset(new Tx[S.m]);
+			s_col.reset(pcs_aligned_new<Tx>(S.m));
 			s_mark.reset(new Ti[S.m]);
 		}
 	};
