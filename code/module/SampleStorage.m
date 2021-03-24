@@ -41,31 +41,17 @@ classdef SampleStorage < handle
         end
         
         function o = finalize(o)
-            switch o.sampler.opts.outputFormat
-                case 'raw'
-                    o.sampler.output.samples = o.sampler.samples;
-                case 'separate'
-                    s = size(o.sampler.samples);
-                    out = permute(o.sampler.samples, [2 3 1]);
-                    out = reshape(out, [s(2) s(3)*s(1)]);
-                    out = o.sampler.polytope.T * out + o.sampler.polytope.y;
-                    n = size(o.sampler.polytope.y, 1);
-                    out = reshape(out, [n s(3) s(1)]);
-                    out = permute(out, [3 1 2]);
-                    out = num2cell(out, [2 3])';
-                    for i = 1:numel(out)
-                        out{i} = reshape(out{i}, [n s(3)]);
-                    end
-                    o.sampler.output.samples = out;
-                case 'combine'
-                    s = size(o.sampler.samples);
-                    out = permute(o.sampler.samples, [2 3 1]);
-                    out = reshape(out, [s(2) s(3)*s(1)]);
-                    o.sampler.output.samples = o.sampler.polytope.T * out + o.sampler.polytope.y;
-                    o.sampler.output.summary = summary(o.sampler.output.samples);
-                otherwise
-                    disp('Unknown o.opts.outputFormat.')
-                    o.sampler.output.samples = o.sampler.samples;
+            if o.sampler.opts.rawOutput
+                o.sampler.output.samples = o.sampler.samples;
+            else
+                s = size(o.sampler.samples);
+                n = size(o.sampler.polytope.y, 1);
+                out = permute(o.sampler.samples, [2 3 1]);
+                out = reshape(out, [s(2) s(3)*s(1)]);
+                out = o.sampler.polytope.T * out + o.sampler.polytope.y;
+                out = reshape(out, [n s(3) s(1)]);
+                out = squeeze(num2cell(out, [1 2]))';
+                o.sampler.output.samples = out;
             end
         end
     end

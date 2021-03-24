@@ -27,6 +27,7 @@ classdef MixingTimeEstimator < handle
         
         function o = step(o)
             s = o.sampler;
+            s.acceptedStep = s.acceptedStep + sum(s.accept);
             if s.i > o.nextEstimateIter
                 ess = effective_sample_size(s.samples);
                 s.mixingTime = s.iterPerRecord * size(s.samples,3) / min(ess, [], 'all');

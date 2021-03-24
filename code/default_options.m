@@ -1,12 +1,13 @@
 function opts = default_options()
     opts = struct;
     opts.seed = 'shuffle';
-    opts.outputFormat = 'combine'; % separate or combine
+    opts.nWorkers = 1;
     
     % Linear System Options
     opts.nSketch = 0;
     opts.solverThreshold = 1e-2;
     opts.extraHessian = 1e-20;
+    opts.simdLen = 4;
     
     % ODE Options
     opts.odeMethod = @implicit_midpoint;
@@ -21,13 +22,7 @@ function opts = default_options()
     opts.effectiveStepSize = 1;
     opts.initalStepSize = 0.2;
     opts.freezeMCMCAfterSamples = 100;
-    opts.simdLen = 4;
-    opts.nWorkers = 1;
-    opts.broadcastInterval = 0.5;
-    
-    % Logging options
-    opts.logging = []; % either a file name or a logging function of the form @(tag, msg, o) ...
-    opts.profiling = false;
+    opts.nRemoveInitialSamples = 5; % the number of samples we remove from the start
     
     % Module options
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
@@ -53,4 +48,12 @@ function opts = default_options()
     opts.ipmDistanceTol = 1e-8; % we assume a constraint is tight if dist to constraint < distanceTol
     opts.splitDenseCols = 30;
     opts.removeFixedVariablesTol = 1e-12;
+    
+    % System Options
+    opts.broadcastInterval = 0.5; % how often we sync between workers
+    
+    % Debug Options
+    opts.rawOutput = false; % used only for debugging purpose, many functions for diagnostics does not work for raw output
+    opts.profiling = false;
+    opts.logging = []; % either a file name or a logging function of the form @(tag, msg, o) ...
 end

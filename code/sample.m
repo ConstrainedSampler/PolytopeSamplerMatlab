@@ -7,8 +7,8 @@ function o = sample(problem, N, opts)
 %
 %Output:
 % o - a structure containing the following properties:
-%   samples - a dim x N vector containing all the samples
-%   mixingRecord - number of records per "independent" sample based on min(ess)
+%   samples - a cell of dim x N vectors containing each chain of samples
+%   independent_samples - independent samples extracted (according to effective sample size)
 %   prepareTime - time to pre-process the input (including find interior
 %                 point, remove redundant constraints, reduce dimension etc.)
 %   sampleTime - total sampling time in seconds (sum over all workers)
@@ -29,7 +29,6 @@ else
 end
 
 opts.startTime = t;
-outputFormat = opts.outputFormat;
 
 %% Presolve
 rng(opts.seed, 'simdTwister');
@@ -62,9 +61,10 @@ if opts.nWorkers ~= 1
         if opts.profiling
             mpiprofile on
         end
-        opts.seed = seeds(labindex);
-        opts.labindex = labindex;
-        workerOutput = sample_inner(problem, N, opts, polytope, nWorkers);
+        opts2 = opts;
+        opts2.seed = seeds(labindex);
+        opts2.labindex = labindex;
+        workerOutput = sample_inner(problem, N, opts2, polytope, nWorkers);
         
         if opts.profiling
             mpiprofile viewer
@@ -79,7 +79,7 @@ if opts.nWorkers ~= 1
         o.sampleTime = o.sampleTime + o.workerOutput{i}.sampleTime;
     end
     
-    if ~strcmp(outputFormat,'raw')
+    if ~opts.rawOutput
         o.samples = o.workerOutput{1}.samples;
         for i = 2:nWorkers
             o.samples = [o.samples o.workerOutput{i}.samples];
@@ -98,18 +98,23 @@ else
     end
 end
 
-if ~strcmp(outputFormat,'raw')
-    o.summary = summary(o.samples);
-    ess = min(o.summary.ess);
-    if iscell(o.samples)
-        nRecord = 0;
-        for i = 1:numel(o.samples)
-            nRecord = nRecord + size(o.samples{i}, 2);
+if ~opts.rawOutput
+    o.ess = effective_sample_size(o.samples);
+    o.summary = summary(o);
+    
+    y = [];
+    for i = 1:numel(o.ess)
+        samples_i = o.samples{i};
+        ess_i = o.ess{i};
+        N_i = size(samples_i,2);
+        gap = ceil(N_i/ min(o.ess{i}, [], 'all'));
+        for j = 1:size(ess_i,2)
+            y_ij = samples_i(:, ceil(opts.nRemoveInitialSamples*gap:gap:N_i));
+            y = [y y_ij];
         end
-    else
-        nRecord = size(o.samples, 2);
     end
-    o.mixingRecord = nRecord / ess;
+    o.independent_samples = y;
 end
+    
 o.prepareTime = prepareTime;
 o.polytope = polytope;

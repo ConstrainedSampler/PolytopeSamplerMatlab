@@ -21,22 +21,21 @@ end
 
 defaults.toPlot = false;
 defaults.tol = 1e-8;
+defaults.thinningFactor = 5;
 opts = setfield(defaults, opts);
 P = o.polytope.originalProblem;
-x = thin_samples(o.samples);
-s = size(x); l = prod(s(1:end-1));
-x = reshape(x, [l, s(end)]);
+x = o.independent_samples(:,1:opts.thinningFactor:end); % both adtest and kstest are for independent samples
 dim = o.polytope.n - size(o.polytope.A, 1);
 
-if size(x,2) < 10
-    warning('uniformtest:size', 'Effective sample size should be at least 10.');
+if size(x,2) < 20
+    warning('uniformtest:size', sprintf('Effective sample size should be at least %i.', opts.thinningFactor * 20));
 end
 
 p = x(:,1);
 x = x(:,2:end);
 
 if ~isempty(P.df)
-    warning('PolytopeSampler:uniformtest:nonUniform', 'The density of the distribution should be uniform, namely, df = 0.');
+    warning('PolytopeSampler:uniformtest:nonUniform', 'This test only works for uniform distributions, namely, df = 0.');
 end
 
 K = size(x,2);
@@ -61,14 +60,15 @@ for i=1:K
     unif_vals(i) = (1 / (1+r))^dim;
 end
 
+% to ensure pval1 and pval2 are independent, we run them on disjoint subset
 try
-    [~,pVal1] = adtest(norminv(unif_vals));
+    [~,pVal1] = adtest(norminv(unif_vals(1:floor(K/2))));
 catch
     pVal1 = 1;
 end
 
 try
-    [~,pVal2] = kstest(norminv(unif_vals));
+    [~,pVal2] = kstest(norminv(unif_vals((floor(K/2)+1):end)));
 catch
     pVal2 = 1;
 end

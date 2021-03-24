@@ -29,6 +29,7 @@ classdef Sampler < dynamicprops
         x, v   % current point
         x_, v_ % proposed point
         prob, accept, feasible
+        acceptedStep = 0;
         freezed = false
         H1, H2
         ODEStep

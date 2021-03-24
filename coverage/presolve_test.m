@@ -37,6 +37,7 @@ end
 % first solve it using matlab LP solver
 P_opts = default_options();
 P_opts.runSimplify = false;
+P_opts.logFunc = @(tag, msg) 0;
 P0 = Polytope(P, P_opts);
 df = P0.df;
 

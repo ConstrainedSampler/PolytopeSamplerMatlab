@@ -38,7 +38,7 @@ o.nnz = nnz(sample_out.sampler.ham.A);
 o.preTime = sample_out.prepareTime;
 o.stepSize = sample_out.sampler.stepSize;
 o.nStep = sample_out.totalStep;
-o.avgAcc = sample_out.averageLinearSystemAccuracy;
+o.avgAcc = mean(sample_out.averageAccuracy);
 [o.pVal] = uniformtest(sample_out);
 o.mixing = sample_out.sampler.mixingTime;
 

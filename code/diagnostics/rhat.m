@@ -8,6 +8,8 @@ function [rhat_val] = rhat(x)
 %Output:
 % rhat - a dim x 1 vector where ess(i) is the effective sample size of x(i,:).
 
+x = cell2mat(x); % TODO: this is not a correct algorithm. Fix it.
+
 [~, N] = size(x);
 if mod(N, 2) == 1
     x = x(:, 1:N-1);

@@ -4,7 +4,6 @@ classdef ProgressBar < handle
         opts
         
         startTime
-        acceptedStep = 0;
         nextBackspaceLength
         barLength = 25
         nSamplesTextLength = 12
@@ -20,15 +19,14 @@ classdef ProgressBar < handle
             o.sampler = sampler;
             o.startTime = tic;
             o.lastRefresh = tic;
-            o.acceptedStep = 0;
             if (sampler.N ~= Inf)
-                o.nSamplesTextLength = max(length(num2str(sampler.N)*2),3);
+                o.nSamplesTextLength = max(length(num2str(sampler.N)*2),5);
                 o.nSamplesFieldLength = 2 * o.nSamplesTextLength + 1;
             end
             
             if sampler.labindex == 1
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
-                s = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Samples', 'AccRate', 'StepSize', 'MixTime');
+                s = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Est Samples', 'AccRate', 'StepSize', 'MixTime');
                 disp(s);
                 
                 if (sampler.nWorkers > 1)
@@ -49,7 +47,6 @@ classdef ProgressBar < handle
         end
         
         function o = step(o)
-            o.acceptedStep = o.acceptedStep + sum(o.sampler.accept);
             if toc(o.lastRefresh) < o.refreshInterval, return, end
             if o.sampler.labindex == 1
                 o.refresh_bar();
@@ -59,7 +56,7 @@ classdef ProgressBar < handle
         function o = refresh_bar(o)
             s = o.sampler; k = size(s.samples,1);
             o.lastRefresh = tic;
-            prob = (o.acceptedStep/k) / s.i;
+            prob = (s.acceptedStep/k) / s.i;
             timeSpent = toc(o.startTime);
             avgMixingTime = (size(s.samples,1) * s.nWorkers) / s.sampleRate;
             if isnan(s.sampleRate)
