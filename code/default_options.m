@@ -25,7 +25,7 @@ function opts = default_options()
     opts.nRemoveInitialSamples = 5; % the number of samples we remove from the start
     
     % Module options
-    opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
+    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
     
     opts.DynamicStepSize = struct;
     opts.DynamicStepSize.maxConsecutiveBadStep = 10;
@@ -33,13 +33,16 @@ function opts = default_options()
     opts.DynamicStepSize.shrinkFactor = 1.1;
     opts.DynamicStepSize.minStepSize = 0.001;
     
-    opts.MixingTimeEstimator = struct;
-    opts.MixingTimeEstimator.startIter = 100;
-    opts.MixingTimeEstimator.iterMultiplier = 2;
     
-    opts.SampleStorage = struct;
-    opts.SampleStorage.recordsPerIndependentSample = 5;
-    opts.SampleStorage.minNumRecords = 1000;
+    % We estimate the mixing time when the average accepted step 
+    % = initialStep * stepMultiplier^k for k = 1, 2, ...
+    opts.MixingTimeEstimator = struct;
+    opts.MixingTimeEstimator.initialStep = 100;
+    opts.MixingTimeEstimator.stepMultiplier = 2;
+    
+    opts.MemoryStorage = struct;
+    opts.MemoryStorage.recordsPerIndependentSample = 5;
+    opts.MemoryStorage.minNumRecords = 1000;
     
     % Presolve Options
     opts.runSimplify = true;

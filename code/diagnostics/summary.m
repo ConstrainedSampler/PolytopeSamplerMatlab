@@ -3,10 +3,10 @@ function smry = summary(o)
 %compute summary of samples
 %
 %Input:
-% o - output of sample
+% o - the samples object outputted by sample
 %
 %Output:
-% smry - a table summarizing the mean and ess and rhat of spls.
+% smry - a table summarizing the mean and ess and rhat of samples.
 
 % compute ess by summing over all chains
 ess = 0;
@@ -17,19 +17,15 @@ for i = 1:numel(o.ess)
     end
 end
 
-% compute the rest of the info
-spls = o.samples;
-rh = rhat(spls);
-
-merged_spls = cell2mat(spls);
-st = std(merged_spls, 0, 2);
-m = mean(merged_spls,2);
-Y = prctile(merged_spls, [25 50 75], 2);
+% compute the rest of the summary
+rh = rhat(o.chains);
+st = std(o.samples, 0, 2);
+m = mean(o.samples,2);
+Y = prctile(o.samples, [25 50 75], 2);
 per25 = Y(:, 1);
 per50 = Y(:, 2);
 per75 = Y(:, 3);
-d = size(merged_spls, 1);
-clear merged_spls
+d = size(o.samples, 1);
 
 smry = table(m, st, per25, per50, per75, ess, rh, 'VariableNames',...
     {'mean','std','25%', '50%', '75%', 'ess', 'r_hat'}, ...

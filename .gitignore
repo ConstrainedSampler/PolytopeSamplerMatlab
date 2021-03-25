@@ -2,7 +2,7 @@
 *.log
 *.m~
 *.pdb
-*_ignore*
+# *_ignore*
 .DS_Store
 paper/
 coverage/problems/extra/

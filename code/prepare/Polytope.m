@@ -9,7 +9,7 @@ classdef Polytope < handle
         f       % the objective function and its derivatives in the original space
         df
         ddf
-        originalProblem
+        original
         opts
         opDim	% oracles assumes each vector is along "dim"-th dimension
     end
@@ -67,7 +67,7 @@ classdef Polytope < handle
                 return;
             end
             P = standardize_problem(P);
-            o.originalProblem = P;
+            o.original = P;
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
             nP = size(P.Aeq, 2);
@@ -130,6 +130,11 @@ classdef Polytope < handle
             w = o.estimate_width(o.center);
             if (max(w) > 1e10)
                 warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
+            end
+            
+            %% Use the user-given center if it is given
+            if ~isempty(P.center)
+                o.center = o.T\(P.center - o.y);
             end
         end
         

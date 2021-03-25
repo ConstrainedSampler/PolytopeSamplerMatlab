@@ -1,6 +1,4 @@
-function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sampler
-    startTime = tic;
-    opts.N = N;
+function o = sample_inner(polytope, opts)
     s = Sampler(problem, polytope, nWorkers, opts);
     if (s.nWorkers > 1)
         everyOneElse = 1:nWorkers;
@@ -8,16 +6,7 @@ function o = sample_inner(problem, N, opts, polytope, nWorkers)    %% Set up Sam
     end
     
     %% Sample
-    s.ham = Hamiltonian(s.polytope, opts);
-    s.stepSize = opts.initalStepSize;
-    s.momentum = 1 - min(1, s.stepSize/opts.effectiveStepSize);
-    s.x = ones(opts.simdLen, 1) * s.polytope.center';
-    s.v = s.ham.resample(s.x, zeros(size(s.x)));
-
-    for i = 1:length(opts.module)
-        s.module{i}.initialize();
-    end
-
+    
     while true
         % v step
         s.v_ = s.ham.resample(s.x, s.v, s.momentum);

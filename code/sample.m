@@ -18,8 +18,15 @@ t = tic;
 if (nargin <= 2)
     opts = default_options();
 end
-compile_solver(0); compile_solver(opts.simdLen); 
-if ischar(opts.logging) || isstring(opts.logging)
+opts.startTime = t;
+opts.N = N;
+
+compile_solver(0); compile_solver(opts.simdLen);
+
+%% Presolve
+rng(opts.seed, 'simdTwister');
+
+if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
     fid = fopen(opts.logging, 'a');
     opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg);
 elseif ~isempty(opts.logging)
@@ -28,15 +35,13 @@ else
     opts.logFunc = @(tag, msg) 0;
 end
 
-opts.startTime = t;
-
-%% Presolve
-rng(opts.seed, 'simdTwister');
 polytope = Polytope(problem, opts);
-prepareTime = toc(tic);
+
 if ischar(opts.logging) || isstring(opts.logging)
     fclose(fid);
 end
+
+prepareTime = toc(t);
 
 %% Set up workers if nWorkers ~= 1
 if opts.nWorkers ~= 1
@@ -52,19 +57,19 @@ if opts.nWorkers ~= 1
         delete(p);
         p = parpool(opts.nWorkers);
     end
-    nWorkers = p.NumWorkers;
+    opts.nWorkers = p.NumWorkers;
     
     % generate random seeds
     seeds = randi(intmax('uint32'), nWorkers, 1, 'uint32');
     
-    spmd(nWorkers)
+    spmd(opts.nWorkers)
         if opts.profiling
             mpiprofile on
         end
-        opts2 = opts;
-        opts2.seed = seeds(labindex);
-        opts2.labindex = labindex;
-        workerOutput = sample_inner(problem, N, opts2, polytope, nWorkers);
+        
+        opts_local = opts;
+        opts_local.seed = seeds(labindex);
+        workerOutput = sample_inner(polytope, opts_local);
         
         if opts.profiling
             mpiprofile viewer
@@ -80,19 +85,21 @@ if opts.nWorkers ~= 1
     end
     
     if ~opts.rawOutput
-        o.samples = o.workerOutput{1}.samples;
+        o.samples = o.workerOutput{1}.chains;
         for i = 2:nWorkers
-            o.samples = [o.samples o.workerOutput{i}.samples];
-            o.workerOutput{i}.samples = [];
+            o.samples = [o.samples o.workerOutput{i}.chains];
+            o.workerOutput{i}.chains = [];
         end
     end
 else
     opts.seed = randi(intmax('uint32'), 'uint32');
-    opts.labindex = 1;
+    opts.nWorkers = 1;
     if opts.profiling
         profile on
     end
-    o = sample_inner(problem, N, opts, polytope, 1);
+    
+    o = sample_inner(polytope, opts);
+    
     if opts.profiling
         profile report
     end
@@ -115,6 +122,6 @@ if ~opts.rawOutput
     end
     o.independent_samples = y;
 end
-    
+
 o.prepareTime = prepareTime;
 o.polytope = polytope;

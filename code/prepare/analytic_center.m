@@ -11,11 +11,7 @@ function [x, C, d, output] = analytic_center(A, b, f, opts, x)
 %  maxIter - maximum number of iterations (default: 300)
 %  dualTol - stop when ||A' * lambda - gradf(x)||_2 < dualTol (default: 1e-12)
 %  gaussianTerm - how much we add the identity into the hess f(x) to avoid numerical error (default: 1e-12)
-%  regularizerStep - how much we multiply the identity we added into hess f(x) when there is a numerical problem (default: 10)
-%  detectTightConstraints - detect tight constraints (default: true)
-%  distanceTol - ||grad f_i(x)|| > 1/distanceTol && ||dx||_x >= velocityTol implies the coordinate i is tight. (default: 1e-6)
-%  velocityTol - default: 1e-1.
-%  distanceTol2 - ||grad f_i(x)|| > 1/distanceTol2 implies the coordinate i is tight. (default: 1e-9)
+%  ipmDistanceTol - ||grad f_i(x)|| > 1/distanceTol && ||dx||_x >= velocityTol implies the coordinate i is tight. (default: 1e-6)
 %
 %Output:
 % x - It outputs the minimizer of min f(x) subjects to {Ax=b}
@@ -33,9 +29,7 @@ formats.t = struct('label', 'Step Size', 'format', '13.2e');
 formats.primalErr = struct('label', 'Primal Error', 'format', '13.2e');
 formats.dualErr = struct('label', 'Dual Error', 'format', '13.2e');
 output = TableDisplay(formats);
-output.logFunc = opts.logFunc;
-output.tag = 'analytic_center';
-output.header();
+opts.logFunc('analytic_center', output.header());
 
 %% initial conditions
 if exist('x', 'var') == 0 || isempty(x) || ~f.barrier.feasible(x)
@@ -89,7 +83,7 @@ for iter = 1:opts.ipmMaxIter
     
     % printout
     o = struct('iter', iter, 't', tGrad, 'primalErr', primalErr, 'dualErr', dualErr);
-    output.print(o);
+    opts.logFunc('analytic_center', output.print(o));
     
     % stop if converged
     if (tGrad == 1)

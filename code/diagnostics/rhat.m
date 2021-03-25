@@ -8,7 +8,12 @@ function [rhat_val] = rhat(x)
 %Output:
 % rhat - a dim x 1 vector where ess(i) is the effective sample size of x(i,:).
 
-x = cell2mat(x); % TODO: this is not a correct algorithm. Fix it.
+% TODO: this is not a correct algorithm. Fix it.
+% Now the input is always
+% cell of matrices dim x N. Each matrix is a chain.
+% What is the correct formula in this case?
+% Update the comment also. It is wrong now.
+x = cell2mat(x);
 
 [~, N] = size(x);
 if mod(N, 2) == 1

@@ -1,46 +1,35 @@
 classdef MixingTimeEstimator < handle
+    % Module for estimate mixing time
+    
     properties
-        sampler
         opts
         
         sampleRate = 0
         sampleRateOutside = 0
         estNumSamples = 0
         estNumSamplesOutside = 0
-        nextEstimateIter
+        nextEstimateStep
     end
     
     methods
-        function o = MixingTimeEstimator(sampler)
-            o.sampler = sampler;
-            o.opts = sampler.opts.MixingTimeEstimator;
-            o.nextEstimateIter = o.opts.startIter;
+        function o = MixingTimeEstimator(s)
+            o.opts = s.opts.MixingTimeEstimator;
+            o.nextEstimateStep = o.opts.initialStep;
         end
         
-        function o = initialize(o)
-            
-        end
-        
-        function o = propose(o)
-            
-        end
-        
-        function o = step(o)
-            s = o.sampler;
-            s.acceptedStep = s.acceptedStep + sum(s.accept);
-            if s.i > o.nextEstimateIter
-                ess = effective_sample_size(s.samples);
-                s.mixingTime = s.iterPerRecord * size(s.samples,3) / min(ess, [], 'all');
-                o.sampleRate = size(s.samples,1) / s.mixingTime;
-                o.estNumSamples = (s.i / s.mixingTime) * size(s.samples,1);
+        function o = step(o, s)
+            if mean(s.acceptedStep) > o.nextEstimateStep
+                ess = effective_sample_size(s.chains);
+                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                o.sampleRate = size(s.chains,1) / s.mixingTime;
+                o.estNumSamples = s.i / o.sampleRate;
                 s.share('sampleRate', o.sampleRate);
                 s.share('estNumSamples', o.estNumSamples);
-                o.check();
+                o.update(s);
             end
         end
         
-        function o = sync(o)
-            s = o.sampler;
+        function o = sync(o, s)
             o.estNumSamplesOutside = 0;
             o.sampleRateOutside = 0;
             for i = 1:s.nWorkers
@@ -54,24 +43,20 @@ classdef MixingTimeEstimator < handle
                     end
                 end
             end
-            o.check();
+            o.update(s);
         end
         
-        function o = check(o)
-            s = o.sampler;
+        function o = update(o, s)
+            s.sampleRate = o.sampleRate + o.sampleRateOutside;
             s.totalNumSamples = o.estNumSamples + o.estNumSamplesOutside;
             if s.totalNumSamples > s.N
                 s.share('estNumSamples', o.estNumSamples);
                 s.terminate = 1;
                 s.log('sample:end', '%i samples found.\n', s.totalNumSamples);
+            else
+                estimateEndingStep = s.N / s.sampleRate * (mean(s.acceptedStep) / s.i);
+                o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
             end
-            s.sampleRate = o.sampleRate + o.sampleRateOutside;
-            estimateEndingIter = s.N / s.sampleRate;
-            o.nextEstimateIter = min(o.nextEstimateIter * o.opts.iterMultiplier, estimateEndingIter);
-        end
-        
-        function o = finalize(o)
-            
         end
     end
 end
