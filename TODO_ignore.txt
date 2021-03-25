@@ -1,7 +1,7 @@
 Higher Priority:
-1. move acceptedStep into Sampler
-(move more thing to Sampler?)
-2. Only terminate in MixingTimeEstimator if we have enough accepted steps
+1. To be continue on sample_inner
+> Make the code runable again
+
 3. understand why hypercube is so slow....
 4. Test if the body is single point, if it is, do something else.
 5. Test if we can sample an problem
