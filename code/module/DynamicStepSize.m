@@ -1,41 +1,42 @@
 classdef DynamicStepSize < handle
+    % Module for dynamically choosing the step size
     properties
-        sampler
         opts
         
         consecutiveBadStep
         iterSinceShrink
         rejectSinceShrink
         ODEStepSinceShrink
-        
-        % store a good restart point (x,v)
-        stableX
-        stableV
+        effectiveStep
+        warmupFinished = false
     end
     
     methods
-        function o = DynamicStepSize(sampler)
-            o.sampler = sampler;
-            o.opts = sampler.opts.DynamicStepSize;
+        function o = DynamicStepSize(s)
+            o.opts = s.opts.DynamicStepSize;
             o.consecutiveBadStep = 0;
             o.iterSinceShrink = 0;
             o.rejectSinceShrink = 0;
             o.ODEStepSinceShrink = 0;
+            o.effectiveStep = 0;
         end
         
-        function o = initialize(o)
-            o.stableX = o.sampler.x;
-            o.stableV = o.sampler.v;
-        end
-        
-        function o = propose(o)
-            %stable = o.sampler.prob > 0.7 & o.sampler.ODEStep < o.sampler.opts.maxODEStep;
-            %o.stableX = stable.*o.sampler.x + (1-stable).*o.stableX;
-            %o.stableV = stable.*o.sampler.v + (1-stable).*o.stableV;
-        end
-        
-        function o = step(o)
-            s = o.sampler;
+        function o = step(o, s)
+            % Warmup phase
+            warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
+            if warmupRatio < 1 && ~o.warmupFinished
+                s.stepSize = 1e-6 + s.opts.initalStepSize * warmupRatio;
+                s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
+                return;
+            end
+            
+            if (~o.warmupFinished)
+                s.i = 1;
+                s.acceptedStep = 0;
+                s.nEffectiveStep = 0;
+                s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
+                o.warmupFinished = true;
+            end
             
             bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
             o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;
@@ -47,12 +48,12 @@ classdef DynamicStepSize < handle
             if (~s.freezed)
                 shrink = 0;
                 shiftedIter = o.iterSinceShrink + 20 / (1-s.momentum);
-
-                targetProbability = (1-s.momentum)^(2/3) / 2;
+                
+                targetProbability = (1-s.momentum)^(2/3)/4;
                 if (max(o.rejectSinceShrink) > targetProbability  * shiftedIter)
                     shrink = sprintf('Failure Probability is %.4f, which is larger than the target %.4f', max(o.rejectSinceShrink) / o.iterSinceShrink, targetProbability);
                 end
-
+                
                 if (max(o.consecutiveBadStep) > o.opts.maxConsecutiveBadStep)
                     shrink = sprintf('Consecutive %i Bad Steps', max(o.consecutiveBadStep));
                 end
@@ -60,17 +61,15 @@ classdef DynamicStepSize < handle
                 if (max(o.ODEStepSinceShrink) > o.opts.targetODEStep * shiftedIter)
                     shrink = sprintf('ODE solver requires %.4f steps in average, which is larger than the target %.4f', max(o.ODEStepSinceShrink) / o.iterSinceShrink, o.opts.targetODEStep);
                 end
-
+                
                 if ischar(shrink)
-                    %s.x = o.stableX; s.v = o.stableV;
-                    
                     o.iterSinceShrink = 0;
                     o.rejectSinceShrink = 0;
                     o.ODEStepSinceShrink = 0;
                     o.consecutiveBadStep = 0;
                     
                     s.stepSize = s.stepSize / o.opts.shrinkFactor;
-                    s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
+                    s.momentum = 1 - min(0.999, s.stepSize / s.opts.effectiveStepSize);
                     
                     s.log('DynamicStepSize:step', 'Step shrinks to h = %f due to %s\n', s.stepSize, shrink);
                     
@@ -79,10 +78,10 @@ classdef DynamicStepSize < handle
                         s.terminate = 3;
                     end
                 end
-
+                
                 o.iterSinceShrink = o.iterSinceShrink + 1;
             elseif max(o.consecutiveBadStep) > o.opts.maxConsecutiveBadStep
-                s.x = ones(size(s.samples,1),1) * mean(s.samples, [1 3]);
+                s.x = ones(size(s.x,1),1) * mean(s.chains, [1 3]);
                 s.v = s.ham.resample(s.x, zeros(size(s.x)));
                 s.log('DynamicStepSize:step', 'Sampler reset to the center gravity due to consecutive bad steps.\n');
                 
@@ -91,14 +90,6 @@ classdef DynamicStepSize < handle
                 o.ODEStepSinceShrink = 0;
                 o.consecutiveBadStep = 0;
             end
-        end
-        
-        function o = sync(o)
-            
-        end
-        
-        function o = finalize(o)
-            
         end
     end
 end

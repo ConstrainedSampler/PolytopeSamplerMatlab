@@ -6,8 +6,8 @@ P.Aineq = ones(1, d);
 P.bineq = 1;
 P.lb = zeros(d, 1);
 
-o = sample(P, 1000); % Number of samples = 1000
-s = o.independent_samples;  % "independent" samples extracted from the dependent samples chains
+o = sample(P, 500); % Number of samples = 500
+s = o.samples;  % "independent" samples extracted from the dependent samples chains
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
 uniformtest(o, struct('toPlot', true));
@@ -29,9 +29,9 @@ opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
 opts.logging = 'demo_ignore.log'; % Output the debug log to demo_ignore.log
 o = sample(P, +Inf, opts);
-s = o.independent_samples;
+s = o.samples;
 figure;
-histogram(s(1,:))
+histogram(s(1,:), 'BinLimits', [0, 0.5])
 title('Marginal of first coordinate of Birkhoff polytope');
 drawnow()
 
@@ -48,9 +48,8 @@ P.ddf = @(x) ones(d,1);
 opts = default_options();
 opts.maxStep = 10000; % Stop after 10000 iter
 o = sample(P, +Inf, opts);
-s = o.independent_samples;
 figure;
-histogram(s(:))
+histogram(o.samples(:), 'BinLimits', [-1, 1])
 title('Marginal of Gaussian distribution restricted to hypercube');
 drawnow()
 
@@ -72,7 +71,7 @@ P.ddf = @(x) [zeros(d,1);ones(d-1,1)];
 
 o = sample(P, 100);
 figure;
-plot(o.independent_samples(1:d,end))
+plot(o.samples(1:d, end))
 title('Brownian bridge');
 
 %% Example 5: Read a polytope according to Cobra format

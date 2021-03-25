@@ -29,9 +29,7 @@ classdef TestSuite < handle
         
         function test(o)
             output = TableDisplay(o.printFormat);
-            output.tag = 'TestSuite';
-            output.logFunc = @(tag, msg, varargin) TestSuite.output(tag, msg, varargin{:});
-            output.header();
+            fprintf(output.header());
             if isempty(o.problems)
                 o.problems = problemList(o.problemFilter);
             end
@@ -40,7 +38,7 @@ classdef TestSuite < handle
             if (o.debug || o.nCores == 1)
                 for k = 1:length(o.problems)
                     ret = o.runStep(k);
-                    output.print(ret);
+                    fprintf(output.print(ret));
                     
                     total_time = total_time + ret.time;
                     success = success + ret.success;
@@ -53,7 +51,7 @@ classdef TestSuite < handle
                 
                 parfor k = 1:length(o.problems)
                     ret = o.runStep(k);
-                    output.print(ret);
+                    fprintf(output.print(ret));
                     
                     total_time = total_time + ret.time;
                     success = success + ret.success;
@@ -93,12 +91,6 @@ classdef TestSuite < handle
             ret.time = toc(t);
             ret.id = id;
             ret.name = name;
-        end
-    end
-    
-    methods(Static)
-        function output(tag, msg, varargin)
-            fprintf(msg, varargin{:})
         end
     end
 end

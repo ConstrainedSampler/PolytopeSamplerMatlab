@@ -25,29 +25,34 @@ function opts = default_options()
     opts.nRemoveInitialSamples = 5; % the number of samples we remove from the start
     
     % Module options
-    opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
+    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
     
     opts.DynamicStepSize = struct;
     opts.DynamicStepSize.maxConsecutiveBadStep = 10;
     opts.DynamicStepSize.targetODEStep = 10;
     opts.DynamicStepSize.shrinkFactor = 1.1;
     opts.DynamicStepSize.minStepSize = 0.001;
+    opts.DynamicStepSize.warmUpStep = 10; % in terms of effective steps
     
+    
+    % We estimate the mixing time when the average accepted step 
+    % = initialStep * stepMultiplier^k for k = 1, 2, ...
     opts.MixingTimeEstimator = struct;
-    opts.MixingTimeEstimator.startIter = 100;
-    opts.MixingTimeEstimator.iterMultiplier = 2;
+    opts.MixingTimeEstimator.initialStep = 20; % in terms of effective steps
+    opts.MixingTimeEstimator.stepMultiplier = 2;
     
-    opts.SampleStorage = struct;
-    opts.SampleStorage.recordsPerIndependentSample = 5;
-    opts.SampleStorage.minNumRecords = 1000;
+    opts.MemoryStorage = struct;
+    opts.MemoryStorage.recordsPerIndependentSample = 5;
+    opts.MemoryStorage.minNumRecords = 1000;
     
     % Presolve Options
-    opts.runSimplify = true;
-    opts.ipmMaxIter = 100;
-    opts.ipmDualTol = 1e-12;
-    opts.ipmDistanceTol = 1e-8; % we assume a constraint is tight if dist to constraint < distanceTol
-    opts.splitDenseCols = 30;
-    opts.removeFixedVariablesTol = 1e-12;
+	opts.presolve = struct;
+    opts.presolve.runSimplify = true;
+    opts.presolve.ipmMaxIter = 100;
+    opts.presolve.ipmDualTol = 1e-12;
+    opts.presolve.ipmDistanceTol = 1e-8; % we assume a constraint is tight if dist to constraint < distanceTol
+    opts.presolve.splitDenseCols = 30;
+    opts.presolve.removeFixedVariablesTol = 1e-12;
     
     % System Options
     opts.broadcastInterval = 0.5; % how often we sync between workers

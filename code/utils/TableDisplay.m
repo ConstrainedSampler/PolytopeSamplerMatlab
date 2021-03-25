@@ -1,24 +1,24 @@
-% TODO: comments
+% This class is used internal for testing only
+% It prints out a table (to a string) row by row.
 classdef TableDisplay < handle
     properties
         format
-        logFunc
-        tag
     end
     
     methods
-        % format is struct
-        % each field is a field in the table
-        % If that field contains a string,
-        %    it represents the format (according to printf)
-        % otherwise
-        %    it is a structure with fields
-        %        format 
-        %        default
-        %        length
-        %        label
-        %        type % currently, we only support double or string
         function o = TableDisplay(format)
+            % o = TableDisplay(format)
+            % format is struct where each field is a col in the table.
+            % If that field is a string,
+            %    it represents the format (according to printf)
+            % otherwise
+            %    it is a structure with fields
+            %        format 
+            %        default    (default value for the field)
+            %        length
+            %        label
+            %        type       (double or string)
+            
             fields = fieldnames(format);
             for i = 1:length(fields)
                 name = fields{i};
@@ -70,30 +70,10 @@ classdef TableDisplay < handle
             o.format = format;
         end
         
-        function print(o, item)
-            s = '';
-            fields = fieldnames(o.format);
-            for i = 1:length(fields)
-                name = fields{i};
-                if (isfield(item, name))
-                    item_i = item.(name);
-                else
-                    item_i = o.format.(fields{i}).default;
-                end
-                field = o.format.(name);
-                if  strcmp(field.type, 'string') && ...
-                    strlength(item_i) > field.length-1
-                    item_i = extractBetween(item_i, 1, field.length-1);
-                    item_i = item_i{1};
-                end
-                s = strcat(s, sprintf(strcat('%', field.format), item_i), ' ');
-            end
+        function s = header(o)
+            % s = o.header();
+            % Print out the header of the table
             
-            o.logFunc(o.tag, [s, newline]);
-        end
-        
-
-        function header(o)
             s = '';
             fields = fieldnames(o.format);
             total_length = 0;
@@ -110,7 +90,32 @@ classdef TableDisplay < handle
             end
             total_length = total_length - 1;
             
-            o.logFunc(o.tag, [s, newline, repmat('-', 1, total_length), newline]);
+            s = [s, newline, repmat('-', 1, total_length), newline];
+        end
+        
+        function s = print(o, data)
+            % s = o.print(item);
+            % Print out a row of the table with the data
+            
+            s = '';
+            fields = fieldnames(o.format);
+            for i = 1:length(fields)
+                name = fields{i};
+                if (isfield(data, name))
+                    data_i = data.(name);
+                else
+                    data_i = o.format.(fields{i}).default;
+                end
+                field = o.format.(name);
+                if  strcmp(field.type, 'string') && ...
+                    strlength(data_i) > field.length-1
+                    data_i = extractBetween(data_i, 1, field.length-1);
+                    data_i = data_i{1};
+                end
+                s = strcat(s, sprintf(strcat('%', field.format), data_i), ' ');
+            end
+            
+            s = [s, newline];
         end
     end
 end

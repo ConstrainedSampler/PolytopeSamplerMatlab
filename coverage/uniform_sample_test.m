@@ -28,7 +28,7 @@ function o = test_func(name, num_samples)
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
 sample_out = sample(P, num_samples, P_opts);
 
 o = {};

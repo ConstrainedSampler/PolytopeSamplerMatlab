@@ -9,14 +9,14 @@ classdef Polytope < handle
         f       % the objective function and its derivatives in the original space
         df
         ddf
-        originalProblem
+        original
         opts
-        opDim	% oracles assumes each vector is along "dim"-th dimension
+        vdim	% oracles assumes each vector is along "dim"-th dimension
     end
     
-    % private variables
+    % derived variables 
     properties
-        center	% analytic center
+        center      % analytic center
         n
         
         fZero       % whether f is completely zero
@@ -25,10 +25,10 @@ classdef Polytope < handle
         ddfHandle   % whether ddf is handle or not
         
         % Assumed each row of T contains at most 1 non-zero
-        Tidx    % T x = x(Tidx) .* Ta
-        Ta      % T x = x(Tidx) .* Ta
-        Tdf     % T' * df
-        Tddf    % (T.^2)' * ddf
+        Tidx        % T x = x(Tidx) .* Ta
+        Ta          % T x = x(Tidx) .* Ta
+        Tdf         % T' * df
+        Tddf        % (T.^2)' * ddf
     end
     
     methods
@@ -67,7 +67,7 @@ classdef Polytope < handle
                 return;
             end
             P = standardize_problem(P);
-            o.originalProblem = P;
+            o.original = P;
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
             nP = size(P.Aeq, 2);
@@ -82,12 +82,12 @@ classdef Polytope < handle
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
-            o.opts = opts;
+            o.opts = opts.presolve;
             
             o.fHandle = isa(o.f, 'function_handle');
             o.dfHandle = isa(o.df, 'function_handle');
             o.ddfHandle = isa(o.ddf, 'function_handle');
-            o.opDim = 1;
+            o.vdim = 1;
             
             if (~o.fHandle || ~o.dfHandle || ~o.ddfHandle)
                 normf = norm(o.f) + norm(o.df) + norm(o.ddf);
@@ -104,7 +104,7 @@ classdef Polytope < handle
                 lb(fixedVars) = -Inf;
             end
             o.barrier = TwoSidedBarrier(lb, ub);
-            o.barrier.extraHessian = o.opts.extraHessian;
+            o.barrier.extraHessian = opts.extraHessian;
             
             %% Update the transformation Tx + y
             o.T = sparse(nP, length(lb));
@@ -130,6 +130,13 @@ classdef Polytope < handle
             w = o.estimate_width(o.center);
             if (max(w) > 1e10)
                 warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
+            end
+            
+            %% Use the user-given center if it is given
+            if ~isempty(P.center)
+                o.center = o.T\(P.center - o.y);
+            elseif isempty(o.center)
+                [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
             end
         end
         
@@ -180,7 +187,7 @@ classdef Polytope < handle
                 return;
             end
             
-            if o.opDim == 2
+            if o.vdim == 2
                 x = x';
             end
             
@@ -188,7 +195,7 @@ classdef Polytope < handle
                 z = o.Ta .* x(o.Tidx,:) + o.y;
             end
             
-            k = size(x,2);
+            k = size(x, 2);
             if o.fHandle
                 f = zeros(1, k);
                 for i = 1:k
@@ -220,16 +227,16 @@ classdef Polytope < handle
                 h = o.Tddf * ones(1,k);
             end
             
-            if o.opDim == 2
+            if o.vdim == 2
                 f = f';
                 g = g';
                 h = h';
             end
         end
         
-        function selectOpDim(o, opDim)
-            o.opDim = opDim;
-            o.barrier.selectOpDim(opDim);
+        function set_vdim(o, vdim)
+            o.vdim = vdim;
+            o.barrier.set_vdim(vdim);
         end
     end
     
@@ -266,7 +273,7 @@ classdef Polytope < handle
             [cscale,rscale] = gmscale(o.A./sqrt(hess)', 0, 0.9);
             o.A = spdiag(1./rscale) * o.A;
             o.b = o.b./rscale;
-            o.barrier.update(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
+            o.barrier.set_bound(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
             o.append_map(spdiag(1./cscale));
             
             if ~isempty(o.center)
@@ -276,7 +283,7 @@ classdef Polytope < handle
         
         function shift_barrier(o, x)
             o.append_map(speye(numel(x)), x);
-            o.barrier.update(o.barrier.lb - x, o.barrier.ub - x);
+            o.barrier.set_bound(o.barrier.lb - x, o.barrier.ub - x);
             
             if ~isempty(o.center)
                 o.center = o.center - x;
@@ -301,7 +308,7 @@ classdef Polytope < handle
             % remove all fixed variables
             S = speye(o.n);
             o.append_map(S(:,~fixedVars), x.*fixedVars);
-            o.barrier.update(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
+            o.barrier.set_bound(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
             if ~isempty(o.center)
                 o.center = o.center(~fixedVars);
             end
@@ -407,7 +414,7 @@ classdef Polytope < handle
             o.updateT();
             o.A = A_;
             o.n = length(lb);
-            o.barrier.update(lb, ub);
+            o.barrier.set_bound(lb, ub);
         end
         
         function updateT(o)

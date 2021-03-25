@@ -14,6 +14,6 @@ function o = Solver(A, precision, k)
     %if nargin < 3
     %    o = MatlabSolver(A, precision);
     %else
-    %    o = MultiMatlabSolver2(A, precision, k);
+    %    o = MultiMatlabSolver(A, precision, k);
     %end
 end
