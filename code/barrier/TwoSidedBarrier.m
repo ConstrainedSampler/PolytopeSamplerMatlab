@@ -4,7 +4,7 @@ classdef TwoSidedBarrier < handle
     properties (SetAccess = private)
         ub          % ub
         lb          % lb
-        dim         % Each point is stored along the dimension dim of the input
+        vdim        % Each point is stored along the dimension vdim
         n           % Number of variables
         upperIdx	% Indices that lb == -Inf
         lowerIdx	% Indices that ub == Inf
@@ -17,13 +17,13 @@ classdef TwoSidedBarrier < handle
     end
     
     methods
-        function o = TwoSidedBarrier(lb, ub, dim)
+        function o = TwoSidedBarrier(lb, ub, vdim)
             % o.update(lb, ub)
             % Update the bounds lb and ub.
             
-            if nargin < 3, dim = 1; end
+            if nargin < 3, vdim = 1; end
             o.set_bound(lb, ub);
-            o.dim = dim;
+            o.vdim = vdim;
         end
         
         function set_bound(o, lb, ub)
@@ -48,14 +48,14 @@ classdef TwoSidedBarrier < handle
             o.center = c;
         end
         
-        function set_dim(o, dim)
+        function set_vdim(o, vdim)
             % o.set_bound(lb, ub)
             % Update the dimension dim.
             
-            assert(dim == 1 || dim == 2);
+            assert(vdim == 1 || vdim == 2);
             
-            o.dim = dim;
-            if dim == 1
+            o.vdim = vdim;
+            if vdim == 1
                 o.lb = reshape(o.lb, [o.n, 1]);
                 o.ub = reshape(o.ub, [o.n, 1]);
                 o.center = reshape(o.center, [o.n, 1]);
@@ -70,7 +70,7 @@ classdef TwoSidedBarrier < handle
             % r = o.feasible(x)
             % Output if x is feasible.
             
-            r = all((x > o.lb) & (x < o.ub), o.opDim);
+            r = all((x > o.lb) & (x < o.ub), o.vdim);
         end
         
         function t = step_size(o, x, v)
@@ -81,12 +81,12 @@ classdef TwoSidedBarrier < handle
             
             % check positive direction
             posIdx = v > 0;
-            t1 = min((o.ub(posIdx) - x(posIdx))./v(posIdx), [], o.opDim);
+            t1 = min((o.ub(posIdx) - x(posIdx))./v(posIdx), [], o.vdim);
             if isempty(t1), t1 = max_step; end
             
             % check negative direction
             negIdx = v < 0;
-            t2 = min((o.lb(negIdx) - x(negIdx))./v(negIdx), [], o.opDim);
+            t2 = min((o.lb(negIdx) - x(negIdx))./v(negIdx), [], o.vdim);
             if isempty(t2), t2 = max_step; end
             
             t = min(min(t1, t2), max_step);
@@ -97,7 +97,7 @@ classdef TwoSidedBarrier < handle
             % Output the normal at the boundary around x for each barrier.
             % Assume: only 1 vector is given
             
-            assert(size(x, 3-o.dim) == 1);
+            assert(size(x, 3-o.vdim) == 1);
             
             c = o.center;
             

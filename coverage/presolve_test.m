@@ -36,8 +36,8 @@ end
 
 % first solve it using matlab LP solver
 P_opts = default_options();
-P_opts.runSimplify = false;
-P_opts.logFunc = @(tag, msg) 0;
+P_opts.presolve.runSimplify = false;
+P_opts.presolve.logFunc = @(tag, msg) 0;
 P0 = Polytope(P, P_opts);
 df = P0.df;
 
@@ -50,7 +50,7 @@ else
 end
 
 % simplify the polytope and solve it again
-P_opts.runSimplify = true;
+P_opts.presolve.runSimplify = true;
 P1 = Polytope(P, P_opts);
 df = P1.df;
 

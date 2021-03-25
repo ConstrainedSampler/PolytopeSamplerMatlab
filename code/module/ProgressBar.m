@@ -21,8 +21,8 @@ classdef ProgressBar < handle
             
             if s.labindex == 1
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
-                s = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Est Samples', 'AccRate', 'StepSize', 'MixTime');
-                disp(s);
+                str = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Est Samples', 'AccRate', 'StepSize', 'MixTime');
+                disp(str);
                 
                 if (s.nWorkers > 1)
                     o.nExtraBackspacePerPrint = 3;
@@ -36,13 +36,13 @@ classdef ProgressBar < handle
         function o = step(o, s)
             if toc(o.lastRefresh) < o.refreshInterval, return, end
             if s.labindex == 1
-                o.refresh_bar();
+                o.refresh_bar(s);
             end
         end
         
         function o = finalize(o, s)
             if s.labindex == 1
-                o.refresh_bar();
+                o.refresh_bar(s);
                 fprintf('Done!\n');
             end
         end
@@ -61,7 +61,7 @@ classdef ProgressBar < handle
                 r = min(1, nSamples / s.N);
                 timeRemain = (timeSpent / r) * (1-r);
             end
-            timeRemain = min(timeRemain, s.opts.maxTime - s.opts.startTime); % s.opts.startTime = time before presolve
+            timeRemain = min(timeRemain, s.opts.maxTime - toc(s.opts.startTime)); % s.opts.startTime = time before presolve
             timeRemain = min(timeRemain, (s.opts.maxStep - s.i) / s.i * timeSpent);
             progress = timeSpent/(timeRemain+timeSpent);
             

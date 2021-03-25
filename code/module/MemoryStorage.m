@@ -7,8 +7,8 @@ classdef MemoryStorage < handle
     
     methods
         function o = MemoryStorage(s)
-            o.opts = s.opts.SampleStorage;
-            s.chains = zeros(s.opts.simdLen, size(s.x, 2), 0);
+            o.opts = s.opts.MemoryStorage;
+            s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
         end
         
         function o = step(o, s)
@@ -19,8 +19,14 @@ classdef MemoryStorage < handle
                 %   it exceeds the opts.minNumRecords and
                 %   we store more samples than opts.recordsPerIndependentSample required
                 len = size(s.chains, 3);
-                if len >= o.opts.minNumRecords && 2 * s.iterPerRecord < s.mixingTime / o.opts.recordsPerIndependentSample
-                    h = max(s.mixingTime / (o.opts.recordsPerIndependentSample * s.iterPerRecord), 1);
+                if (isnan(s.mixingTime))
+                    mixingTime = s.i;
+                else
+                    mixingTime = s.mixingTime;
+                end
+                
+                if len >= o.opts.minNumRecords && 2 * s.iterPerRecord < mixingTime / o.opts.recordsPerIndependentSample
+                    h = max(mixingTime / (o.opts.recordsPerIndependentSample * s.iterPerRecord), 1);
                     h = min(h, 2 * len/o.opts.minNumRecords);
                     h = ceil(h);
                     idx = ceil(h*(1:floor(len / h))) + (len - ceil(h * floor(len / h)));
@@ -34,12 +40,12 @@ classdef MemoryStorage < handle
             if s.opts.rawOutput
                 s.output.chains = s.chains;
             else
-                s = size(s.chains);
-                n = size(s.polytope.y, 1);
+                d = size(s.chains);
+                n = size(s.problem.y, 1);
                 out = permute(s.chains, [2 3 1]);
-                out = reshape(out, [s(2) s(3)*s(1)]);
+                out = reshape(out, [d(2) d(3)*d(1)]);
                 out = s.problem.T * out + s.problem.y;
-                out = reshape(out, [n s(3) s(1)]);
+                out = reshape(out, [n d(3) d(1)]);
                 out = squeeze(num2cell(out, [1 2]))';
                 s.output.chains = out;
             end

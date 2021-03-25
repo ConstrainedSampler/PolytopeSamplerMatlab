@@ -24,18 +24,20 @@ opts.N = N;
 compile_solver(0); compile_solver(opts.simdLen);
 
 %% Presolve
-rng(opts.seed, 'simdTwister');
+p = rng(opts.seed, 'simdTwister');
+opts.seed = p.Seed;
 
 if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
     fid = fopen(opts.logging, 'a');
-    opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg);
+    opts.presolve.logFunc = @(tag, msg) fprintf(fid, '%s', msg);
 elseif ~isempty(opts.logging)
-    opts.logFunc = opts.logging;
+    opts.presolve.logFunc = opts.logging;
 else
-    opts.logFunc = @(tag, msg) 0;
+    opts.presolve.logFunc = @(tag, msg) 0;
 end
 
 polytope = Polytope(problem, opts);
+assert(polytope.n > 0, 'The domain consists only a single point.');
 
 if ischar(opts.logging) || isstring(opts.logging)
     fclose(fid);
@@ -59,17 +61,17 @@ if opts.nWorkers ~= 1
     end
     opts.nWorkers = p.NumWorkers;
     
-    % generate random seeds
-    seeds = randi(intmax('uint32'), nWorkers, 1, 'uint32');
-    
     spmd(opts.nWorkers)
         if opts.profiling
             mpiprofile on
         end
         
-        opts_local = opts;
-        opts_local.seed = seeds(labindex);
-        workerOutput = sample_inner(polytope, opts_local);
+        s = Sampler(polytope, opts);
+        while s.terminate == 0
+            s.step();
+        end
+        s.finalize();
+        workerOutput = s.output;
         
         if opts.profiling
             mpiprofile viewer
@@ -77,51 +79,55 @@ if opts.nWorkers ~= 1
     end
     
     o = struct;
-    o.workerOutput = cell(nWorkers, 1);
+    o.workerOutput = cell(opts.nWorkers, 1);
     o.sampleTime = 0;
-    for i = 1:nWorkers
+    for i = 1:opts.nWorkers
         o.workerOutput{i} = workerOutput{i};
         o.sampleTime = o.sampleTime + o.workerOutput{i}.sampleTime;
     end
     
     if ~opts.rawOutput
-        o.samples = o.workerOutput{1}.chains;
-        for i = 2:nWorkers
-            o.samples = [o.samples o.workerOutput{i}.chains];
+        o.chains = o.workerOutput{1}.chains;
+        for i = 2:opts.nWorkers
+            o.chains = [o.chains o.workerOutput{i}.chains];
             o.workerOutput{i}.chains = [];
         end
     end
 else
-    opts.seed = randi(intmax('uint32'), 'uint32');
-    opts.nWorkers = 1;
     if opts.profiling
         profile on
     end
     
-    o = sample_inner(polytope, opts);
+    s = Sampler(polytope, opts);
+    while s.terminate == 0
+        s.step();
+    end
+    s.finalize();
+    o = s.output;
     
     if opts.profiling
         profile report
     end
 end
+o.problem = polytope;
+o.opts = opts;
 
 if ~opts.rawOutput
-    o.ess = effective_sample_size(o.samples);
-    o.summary = summary(o);
+    o.ess = effective_sample_size(o.chains);
     
     y = [];
     for i = 1:numel(o.ess)
-        samples_i = o.samples{i};
+        chain_i = o.chains{i};
         ess_i = o.ess{i};
-        N_i = size(samples_i,2);
+        N_i = size(chain_i,2);
         gap = ceil(N_i/ min(o.ess{i}, [], 'all'));
         for j = 1:size(ess_i,2)
-            y_ij = samples_i(:, ceil(opts.nRemoveInitialSamples*gap:gap:N_i));
+            y_ij = chain_i(:, ceil(opts.nRemoveInitialSamples*gap:gap:N_i));
             y = [y y_ij];
         end
     end
-    o.independent_samples = y;
+    o.samples = y;
+    o.summary = summary(o);
 end
 
 o.prepareTime = prepareTime;
-o.polytope = polytope;

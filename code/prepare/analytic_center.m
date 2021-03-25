@@ -1,4 +1,4 @@
-function [x, C, d, output] = analytic_center(A, b, f, opts, x)
+function [x, C, d] = analytic_center(A, b, f, opts, x)
 %[x, C, d, output] = analytic_center(A, b, f, opts, x)
 %compute the analytic center for the domain {Ax=b} intersect the domain of f
 %
@@ -7,11 +7,9 @@ function [x, C, d, output] = analytic_center(A, b, f, opts, x)
 % b - a m x 1 constraint vector.
 % f - a barrier class (Currently, we only have TwoSidedBarrier)
 % opts - a structure for options with the following properties
-%  display - whether we output the information at each iteration (default: false)
-%  maxIter - maximum number of iterations (default: 300)
-%  dualTol - stop when ||A' * lambda - gradf(x)||_2 < dualTol (default: 1e-12)
-%  gaussianTerm - how much we add the identity into the hess f(x) to avoid numerical error (default: 1e-12)
-%  ipmDistanceTol - ||grad f_i(x)|| > 1/distanceTol && ||dx||_x >= velocityTol implies the coordinate i is tight. (default: 1e-6)
+%  ipmMaxIter - maximum number of iterations
+%  ipmDualTol - stop when ||A' * lambda - gradf(x)||_2 < dualTol
+%  ipmDistanceTol - if x_i is ipmDistanceTol close to some boundary, we assume the coordinate i is tight.
 %
 %Output:
 % x - It outputs the minimizer of min f(x) subjects to {Ax=b}
@@ -20,7 +18,6 @@ function [x, C, d, output] = analytic_center(A, b, f, opts, x)
 %     because of the dom(f), the algorithm will detect the collapsed dimension
 %     and output the detected constraint C x = d
 % d - detected constraint vector
-% output - text output information at each iteration
 
 %% prepare the printout
 formats = struct;
@@ -55,7 +52,6 @@ for iter = 1:opts.ipmMaxIter
     dualErrLast = dualErr; dualErr = norm(rs)/dualFactor;
     feasible = f.barrier.feasible(x);
     if (((dualErr > (1-0.9*tConst)*dualErrLast) && (primalErr > 10 * primalErrMin)) || ~feasible)
-        % tight constraints condition: ||grad(x)||_2 > 1/distanceTol, (x is close boundary)
         dist = f.barrier.boundary_distance(x);
         idx = find(dist < opts.ipmDistanceTol);
         if ~isempty(idx), break; end

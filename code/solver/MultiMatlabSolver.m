@@ -9,7 +9,6 @@ classdef MultiMatlabSolver < handle
     end
     
     methods
-        % precision is either double or doubledouble
         function o = MultiMatlabSolver(A, precision, k)
             o.k = k;
             o.m = size(A,2);

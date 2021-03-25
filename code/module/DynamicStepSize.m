@@ -7,6 +7,8 @@ classdef DynamicStepSize < handle
         iterSinceShrink
         rejectSinceShrink
         ODEStepSinceShrink
+        effectiveStep
+        warmupFinished = false
     end
     
     methods
@@ -16,9 +18,26 @@ classdef DynamicStepSize < handle
             o.iterSinceShrink = 0;
             o.rejectSinceShrink = 0;
             o.ODEStepSinceShrink = 0;
+            o.effectiveStep = 0;
         end
         
         function o = step(o, s)
+            % Warmup phase
+            warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
+            if warmupRatio < 1 && ~o.warmupFinished
+                s.stepSize = 1e-6 + s.opts.initalStepSize * warmupRatio;
+                s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
+                return;
+            end
+            
+            if (~o.warmupFinished)
+                s.i = 1;
+                s.acceptedStep = 0;
+                s.nEffectiveStep = 0;
+                s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
+                o.warmupFinished = true;
+            end
+            
             bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
             o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;
             o.iterSinceShrink = o.iterSinceShrink + 1;
@@ -30,7 +49,7 @@ classdef DynamicStepSize < handle
                 shrink = 0;
                 shiftedIter = o.iterSinceShrink + 20 / (1-s.momentum);
                 
-                targetProbability = (1-s.momentum)^(2/3) / 2;
+                targetProbability = (1-s.momentum)^(2/3)/4;
                 if (max(o.rejectSinceShrink) > targetProbability  * shiftedIter)
                     shrink = sprintf('Failure Probability is %.4f, which is larger than the target %.4f', max(o.rejectSinceShrink) / o.iterSinceShrink, targetProbability);
                 end
@@ -50,7 +69,7 @@ classdef DynamicStepSize < handle
                     o.consecutiveBadStep = 0;
                     
                     s.stepSize = s.stepSize / o.opts.shrinkFactor;
-                    s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
+                    s.momentum = 1 - min(0.999, s.stepSize / s.opts.effectiveStepSize);
                     
                     s.log('DynamicStepSize:step', 'Step shrinks to h = %f due to %s\n', s.stepSize, shrink);
                     

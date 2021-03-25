@@ -17,9 +17,9 @@ function [pVal] = uniformtest(o, opts)
 %        distribution r^(dim-1).
 %        We use Anderson-Darling and Kolmogorov-Smirnov tests here.
 
-if nargin == 0, opts = struct; end
+if nargin == 1, opts = struct; end
 
-if ~isempty(ver('stats'))
+if isempty(ver('stats'))
     error('This function requires the Statistics and Machine Learning Toolbox');
 end
 assert(~o.opts.rawOutput, 'This function does not support raw output');
@@ -38,6 +38,10 @@ dim = o.problem.n - size(o.problem.A, 1);
 
 if size(x,2) < 20
     warning('uniformtest:size', 'Effective sample size should be at least %i.', opts.thinningFactor * 20);
+    if size(x,2) < 5
+        pVal = 0;
+        return;
+    end
 end
 
 p = x(:,1);
@@ -47,7 +51,6 @@ P = o.problem.original;
 if ~isempty(P.df)
     warning('PolytopeSampler:uniformtest:nonUniform', 'This test only works for uniform distributions, namely, df = 0.');
 end
-
 
 N = size(x,2);
 unif_vals = zeros(N,1);
@@ -70,7 +73,7 @@ for i = 1:N
     posAIdx = (Au > opts.tol);
     r3 = min((P.bineq(posAIdx) - Ax(posAIdx))./(Au(posAIdx)));
     
-    r = min(r1, r2, r3);
+    r = min([r1, r2, r3]);
     unif_vals(i) = (1 / (1+r))^dim;
 end
 

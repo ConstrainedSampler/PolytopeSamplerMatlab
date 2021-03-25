@@ -1,23 +1,22 @@
 initSampler_ignore
 
-% The mistake happens even if I set the threshold to 1e+16 or 1e-16.
-
 %profile on;
-%P = loadProblem('metabolic/Recon1');
-P = loadProblem('netlib/agg');
+P = loadProblem('metabolic/Recon1');
+%P = loadProblem('netlib/agg');
 opts = default_options();
 opts.seed = 1;
 opts.simdLen = 4;
 opts.outputFormat = 'separate';
 opts.nWorkers = 1;
 opts.maxTime = 300;
-%opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize'};
+%opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicStepSize', 'ProgressBar'};
+%opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
 %opts.maxStep = 4000;
 % requirement, it will simply need to non-convergence
 
 opts.module{end+1} = 'DebugLogger';
 %opts.initalStepSize = 0.05;
-opts.logging = 'demo_ignore.log';
+opts.logging = 'ttt_ignore.log';
 o = sample(P, 1000, opts);
 %[pVal] = uniformtest(o, struct('toPlot', true));
 %profile report;

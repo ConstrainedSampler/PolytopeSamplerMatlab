@@ -18,11 +18,11 @@ classdef MixingTimeEstimator < handle
         end
         
         function o = step(o, s)
-            if mean(s.acceptedStep) > o.nextEstimateStep
+            if mean(s.nEffectiveStep) > o.nextEstimateStep
                 ess = effective_sample_size(s.chains);
                 s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
-                o.estNumSamples = s.i / o.sampleRate;
+                o.estNumSamples = s.i * o.sampleRate;
                 s.share('sampleRate', o.sampleRate);
                 s.share('estNumSamples', o.estNumSamples);
                 o.update(s);
@@ -49,6 +49,10 @@ classdef MixingTimeEstimator < handle
         function o = update(o, s)
             s.sampleRate = o.sampleRate + o.sampleRateOutside;
             s.totalNumSamples = o.estNumSamples + o.estNumSamplesOutside;
+            if o.estNumSamples > s.opts.freezeMCMCAfterSamples
+                s.freezed = true;
+            end
+            
             if s.totalNumSamples > s.N
                 s.share('estNumSamples', o.estNumSamples);
                 s.terminate = 1;

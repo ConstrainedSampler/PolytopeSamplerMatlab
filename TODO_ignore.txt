@@ -1,21 +1,11 @@
-Higher Priority:
-1. To be continue on sample_inner
-> Make the code runable again
+TODO:
+1. Test on linux
 
-3. understand why hypercube is so slow....
-4. Test if the body is single point, if it is, do something else.
-5. Test if we can sample an problem
-6. Allow to set initial point
-7. Test on linux machine
-8. Test on mac machine
-9. Add DiskStorage? (Check what function uses s.samples)
-https://www.mathworks.com/help/matlab/tall-arrays.html
-> We need store some chains for estimating ess
-10. Update analytic_center comments and look at the code again
 
-Lower Priority:
-0. Ask ruoqi to fix rhat
-1. Linear system are not accurate enough. (Ax neq b)
-2. Have more test on non-zero f
-3. Write Hamiltonian class in mex to make it faster for small problems
-4. nChains = 'auto'
+Future Todo:
+1. Ask ruoqi to update rhat, test on mac, finish volumetric barrier
+2. Santosh makes more test for non-zero f (put it to coverage folder)
+3. Santosh adding comments everywhere
+4. compute leverage score col by col
+5. make chol and leverage score more cache friendly
+6. Tune the parmeters for Hypercube

@@ -35,6 +35,15 @@ classdef MexSolver < handle
             o.uid = o.solver('init', uint64(randi(2^32-1,'uint32')), A);
             o.solver('setAccuracyTarget', o.uid, precision);
 			o.precision = precision;
+            
+            if size(A, 2) == 0
+                if o.k == 0
+                    o.w = zeros(0, 1);
+                else
+                    o.w = zeros(o.k, 0);
+                end
+                o.accuracy = o.solver('decompose', o.uid, o.w);
+            end
         end
         
 		function b = saveobj(a)

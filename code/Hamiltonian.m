@@ -32,7 +32,7 @@ classdef Hamiltonian < handle
     
     methods
         function o = Hamiltonian(P, opts)
-            P.selectOpDim(2);
+            P.set_vdim(2);
             
             o.P = P;
             o.A = P.A;
