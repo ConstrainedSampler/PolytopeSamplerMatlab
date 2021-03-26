@@ -1,4 +1,3 @@
-#include <cstring>
 #include "mex_utils.h"
 #include "PackedCSparse/PackedChol.h"
 
@@ -52,8 +51,9 @@ int main()
 				w = env::inputArray<double>(n);
 			else
 				w = env::inputArray<double>(simd_len, n);
-			Tx2 ret = solver->decompose((Tx2*)w);
+			solver->decompose((Tx2*)w);
 			
+			Tx2 ret = solver->lastAccuracy;
 			if (SIMD_LEN == 0)
 				env::outputScalar<double>(get(ret, 0));
 			else
@@ -117,6 +117,6 @@ int main()
 			delete solver;
 		}
 		else
-			throw "Invalid operation.";
+			env::error("Invalid operation.");
 	}
 }

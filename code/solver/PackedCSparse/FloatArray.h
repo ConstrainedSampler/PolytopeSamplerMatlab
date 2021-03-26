@@ -95,7 +95,8 @@ namespace PackedCSparse {
 			a.x[index] = value;
 		}
 
-		static BaseImpl abs(BaseImpl& x)
+		template <typename T, size_t k>
+		static BaseImpl abs()
 		{
 			BaseImpl out;
 			for (size_t i = 0; i < k; i++)
@@ -103,7 +104,8 @@ namespace PackedCSparse {
 			return out;
 		}
 
-		static BaseImpl log(BaseImpl& x)
+		template <typename T, size_t k>
+		static BaseImpl log()
 		{
 			BaseImpl out;
 			for (size_t i = 0; i < k; i++)
@@ -114,13 +116,13 @@ namespace PackedCSparse {
 		static void fmadd(BaseImpl& a, const BaseImpl& b, const BaseImpl& c)
 		{
 			for (size_t i = 0; i < k; i++)
-				a.x[i] += b.x[i] * c.x[i];
+				a.x[i] += b.x[i] * c.x[i % k2];
 		}
 
 		static void fnmadd(BaseImpl& a, const BaseImpl& b, const BaseImpl& c)
 		{
 			for (size_t i = 0; i < k; i++)
-				a.x[i] -= b.x[i] * c.x[i];
+				a.x[i] -= b.x[i] * c.x[i % k2];
 		}
 
 		static void fmadd(BaseImpl& a, const BaseImpl& b, const T& c)
@@ -334,16 +336,9 @@ namespace PackedCSparse {
 
 		static m256dArray log(const m256dArray& x)
 		{
-            // gcc does not support _mm256_log_pd
-            // this function is not critical for our application
-            // so, do it sequentially
-            
-			//m256dArray out;
-			//for (size_t i = 0; i < k; i++)
-			//	out.x[i] = _mm256_log_pd(x.x[i]);
-            m256dArray out;
-            for (size_t i = 0; i < 4*k; i++)
-                set(out, i, std::log(get(x,i)));
+			m256dArray out;
+			for (size_t i = 0; i < k; i++)
+				out.x[i] = _mm256_log_pd(x.x[i]);
 			return out;
 		}
 
@@ -447,7 +442,7 @@ namespace PackedCSparse {
 	using FloatArrayFunc = typename FloatTypeSelector<T, k>::funcImpl;
 
 	template<typename T>
-	auto get(const T& a, size_t index) -> decltype(FloatArrayFunc<T>::get(a, index))
+	auto get(const T& a, size_t index)
 	{
 		return FloatArrayFunc<T>::get(a, index);
 	}
