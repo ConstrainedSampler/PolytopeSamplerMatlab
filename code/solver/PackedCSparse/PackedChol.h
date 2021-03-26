@@ -36,7 +36,6 @@ struct PackedChol
 	SparseMatrix<Tx, Ti> At;
 	UniqueAlignedPtr<Tx2> w;
 	Tx accuracyThreshold = 1e-6;
-	Tx2 lastAccuracy;
 	std::vector<size_t> exactIdx; // k size array. Indices we perform high precision calculation
 	std::vector<size_t> numExact; // number of times we perform high precision decompose (length k+1, the last one records how many times we do decompose)
 	bool decomposed = false;
@@ -79,8 +78,10 @@ struct PackedChol
 	}
 
 	template <typename Tv2_>
-	void decompose(const Tv2_* w_in)
+	Tx2 decompose(const Tv2_* w_in)
 	{
+        Tx2 acc = Tx2(0.0);
+        
 		// record w
 		Ti n = A.n;
 		for (Ti j = 0; j < n; j++)
@@ -95,10 +96,10 @@ struct PackedChol
 			decomposed = true;
 			
 			exactIdx.clear();
-			lastAccuracy = estimateAccuracy();
+			acc = estimateAccuracy();
 			for (size_t i = 0; i < k; i++)
 			{
-				if (get(lastAccuracy, i) >= accuracyThreshold) // >= is important for the case accuracyThreshold = 0.0, we need to compute everything exactly
+				if (get(acc, i) >= accuracyThreshold) // >= is important for the case accuracyThreshold = 0.0, we need to compute everything exactly
 					exactIdx.push_back(i);
 			}
 		}
@@ -122,7 +123,7 @@ struct PackedChol
 
 				// copy result to Le[i]
 				if (!Le[i].initialized())
-					Le[i] = std::move(L_exact.clone<Te, Ti>());
+					Le[i] = std::move(L_exact.template clone<Te, Ti>());
 				else
 				{
 					Ti nz = L_exact.nnz();
@@ -133,6 +134,7 @@ struct PackedChol
 
 			delete[] w_exact;
 		}
+        return acc;
 	}
 
 	Tx2 logdet()
@@ -290,7 +292,7 @@ struct PackedChol
 		}
 	}
 
-	void leverageScoreComplementJL(Tx2* out, size_t k)
+	void leverageScoreComplementJL(Tx2* out, size_t JL_k)
 	{
 		pcs_assert(decomposed, "leverageScoreComplementJL: Need to call decompose first.");
 		
@@ -299,7 +301,7 @@ struct PackedChol
 		if (!allExact())
 		{
 			Tx2 T1 = Tx2(1.0), T2 = Tx2(2.0);
-			leverageJL(diagPJL, L, A, At, k);
+			leverageJL(diagPJL, L, A, At, JL_k);
 
 			Tx2* tau = diagPJL.x.get();
 			for (Ti j = 0; j < n; j++)
@@ -311,7 +313,7 @@ struct PackedChol
 			Te T1 = Te(1.0), T2 = Te(2.0);
 			for (size_t i : exactIdx)
 			{
-				leverageJL(diagPJL_exact, Le[i], A, At, k);
+				leverageJL(diagPJL_exact, Le[i], A, At, JL_k);
 
 				Te* tau = diagPJL_exact.x.get();
 				for (Ti j = 0; j < n; j++)
