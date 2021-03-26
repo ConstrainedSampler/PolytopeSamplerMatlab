@@ -1,7 +1,7 @@
-function uniform_sample_test(debug, folder, problems)
+function uniform_sample_test(debug, folders, problems, num_samples)
 s = TestSuite;
-if nargin >= 2 && ~isempty(folder)
-    s.problemFilter.folder = folder;
+if nargin >= 2 && ~isempty(folders)
+    s.problemFilter.folders = folders;
 end
 if nargin >= 3 && ~isempty(problems)
     s.problems = problems;
@@ -18,7 +18,7 @@ s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
 s.printFormat.nStep = '10i';
 s.printFormat.avgAcc = '15.3e';
-s.testFunc = @(name) test_func(name, 200);
+s.testFunc = @(name) test_func(name, num_samples);
 s.test();
 end
 
@@ -28,7 +28,7 @@ function o = test_func(name, num_samples)
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
 sample_out = sample(P, num_samples, P_opts);
 
 o = {};
@@ -38,7 +38,7 @@ o.nnz = nnz(sample_out.sampler.ham.A);
 o.preTime = sample_out.prepareTime;
 o.stepSize = sample_out.sampler.stepSize;
 o.nStep = sample_out.totalStep;
-o.avgAcc = sample_out.averageLinearSystemAccuracy;
+o.avgAcc = mean(sample_out.averageAccuracy);
 [o.pVal] = uniformtest(sample_out);
 o.mixing = sample_out.sampler.mixingTime;
 

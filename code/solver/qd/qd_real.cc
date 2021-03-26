@@ -544,7 +544,7 @@ string qd_real::to_string(int precision, int width, ios_base::fmtflags fmt,
   }
 
   /* Fill in the blanks */
-  int len = s.length();
+  size_t len = s.length();
   if (len < width) {
     int delta = width - len;
     if (fmt & ios_base::internal) {

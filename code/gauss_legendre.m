@@ -8,7 +8,7 @@ function [x3, v3, step] = gauss_legendre(x0, v0, h, ham, opts)
     % Step 2
     c1 = h/4; c2 = h * (1/4-sqrt(3)/6);
     c3 = h * (1/4+sqrt(3)/6); c4 = h/4;
-    nu1 = zeros(size(ham.A,1),1); nu2 = zeros(size(ham.A,1),1);
+    nu1 = zeros(size(x1,1),size(ham.A,1),1); nu2 = zeros(size(x1,1),size(ham.A,1),1);
     k1x = zeros(size(x1)); k1v = zeros(size(v1));
     k2x = zeros(size(x1)); k2v = zeros(size(v1));
     
@@ -24,10 +24,10 @@ function [x3, v3, step] = gauss_legendre(x0, v0, h, ham, opts)
             v1 - c3 * k1v - c4 * k2v, nu2);
         
         dist = ham.x_norm(x1, k2x_old-k2x);
-        if (dist < opts.implicitTol)
+        if (max(dist,[],'all') < opts.implicitTol)
             done = 1;
             break;
-        elseif any(~isfinite(dist))
+        elseif any(~isfinite(dist),'all')
             break;
         end
     end

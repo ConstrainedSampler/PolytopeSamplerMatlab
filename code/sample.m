@@ -7,109 +7,127 @@ function o = sample(problem, N, opts)
 %
 %Output:
 % o - a structure containing the following properties:
-%   samples - a dim x N vector containing all the samples
-%   mixingRecord - number of records per "independent" sample based on min(ess)
-%   prepareTime - time to pre-process the input (including find analytic
-%   center, remove redundant constraints, reduce dimension etc.)
-%   sampleTime - total sampling time in seconds
+%   samples - a cell of dim x N vectors containing each chain of samples
+%   independent_samples - independent samples extracted (according to effective sample size)
+%   prepareTime - time to pre-process the input (including find interior
+%                 point, remove redundant constraints, reduce dimension etc.)
+%   sampleTime - total sampling time in seconds (sum over all workers)
 t = tic;
 
-%% Initialize parameters
+%% Initialize parameters and compiling if needed
 if (nargin <= 2)
     opts = default_options();
 end
+opts.startTime = t;
+opts.N = N;
 
-s = Sampler;
-s.problem = problem;
-s.opts = opts;
-r = rng(opts.seed, 'simdTwister');
-s.seed = r.Seed;
-s.N = N;
-opts.module = unique([{'MixingTimeEstimator', 'SampleStorage'}, opts.module], 'stable');
-for i = 1:length(opts.module)
-    s.module{end+1} = feval(opts.module{i}, s);
-end
+compile_solver(0); compile_solver(opts.simdLen);
 
 %% Presolve
-s.polytope = Polytope(problem, opts);
-s.output.polytope = s.polytope;
+p = rng(opts.seed, 'simdTwister');
+opts.seed = p.Seed;
 
-%% Sample
-s.ham = Hamiltonian(s.polytope, opts);
-s.stepSize = opts.initalStepSize;
-s.momentum = 1 - min(1, s.stepSize/opts.effectiveStepSize);
-s.x = s.polytope.center;
-s.v = s.ham.resample(s.x, zeros(size(s.x)));
-
-for i = 1:length(opts.module)
-    s.module{i}.initialize();
+if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
+    fid = fopen(opts.logging, 'a');
+    opts.presolve.logFunc = @(tag, msg) fprintf(fid, '%s', msg);
+elseif ~isempty(opts.logging)
+    opts.presolve.logFunc = opts.logging;
+else
+    opts.presolve.logFunc = @(tag, msg) 0;
 end
 
-s.ham.opts.checkPrecision = true;
-while true
-    % v step
-    s.v_ = s.ham.resample(s.x, s.v, s.momentum);
-    
-    % x step
-    s.H1 = s.ham.H(s.x, s.v_);
-    [s.x_, s.v_, s.ODEStep] = opts.odeMethod(s.x, s.v_, s.stepSize, s.ham, opts);
-    s.feasible = s.ham.feasible(s.x_, s.v_);
-    
-    if ~s.feasible
-        s.prob = 0;
-    else
-        s.H2 = s.ham.H(s.x_, -s.v_);
-        s.prob = min(1, exp(s.H1-s.H2));
-    end
-    
-    for i = 1:length(opts.module)
-        s.module{i}.propose();
-    end
-    
-    % rejection
-    if rand >= s.prob
-        s.log('sample:reject', 'rejected\n');
-        s.v = -s.v; % flip the direction
-        s.accept = false;
-    else
-        s.x = s.x_; s.v = s.v_;
-        s.accept = true;
-    end
-    for i = 1:length(opts.module)
-        s.module{i}.step();
-    end
-    
-    if (toc(t) > opts.maxTime)
-        s.log('sample:end', 'opts.maxTime (%f sec) reached.\n', opts.maxTime);
-        s.terminate = 2;
-    end
-    
-    if s.i >= opts.maxStep
-        s.log('sample:end', 'opts.maxStep (%i step) reached.\n', opts.maxStep);
-        s.terminate = 2;
-    end
-    
-    if s.terminate > 0
-        break;
-    end
-    
-    s.i = s.i + 1;
-    % check solver precision if not accepted or too many steps
-    s.ham.opts.checkPrecision = (s.accept == false) || (s.ODEStep >= opts.maxODEStep);
+polytope = Polytope(problem, opts);
+assert(polytope.n > 0, 'The domain consists only a single point.');
+
+if ischar(opts.logging) || isstring(opts.logging)
+    fclose(fid);
 end
 
-for i = 1:length(opts.module)
-    s.module{i}.finalize();
+prepareTime = toc(t);
+
+%% Set up workers if nWorkers ~= 1
+if opts.nWorkers ~= 1
+    % create pool with size nWorkers
+    p = gcp('nocreate');
+    if isempty(p)
+        if opts.nWorkers ~= 0
+            p = parpool(opts.nWorkers);
+        else
+            p = parpool();
+        end
+    elseif opts.nWorkers ~= 0 && p.NumWorkers ~= opts.nWorkers
+        delete(p);
+        p = parpool(opts.nWorkers);
+    end
+    opts.nWorkers = p.NumWorkers;
+    
+    spmd(opts.nWorkers)
+        if opts.profiling
+            mpiprofile on
+        end
+        
+        s = Sampler(polytope, opts);
+        while s.terminate == 0
+            s.step();
+        end
+        s.finalize();
+        workerOutput = s.output;
+        
+        if opts.profiling
+            mpiprofile viewer
+        end
+    end
+    
+    o = struct;
+    o.workerOutput = cell(opts.nWorkers, 1);
+    o.sampleTime = 0;
+    for i = 1:opts.nWorkers
+        o.workerOutput{i} = workerOutput{i};
+        o.sampleTime = o.sampleTime + o.workerOutput{i}.sampleTime;
+    end
+    
+    if ~opts.rawOutput
+        o.chains = o.workerOutput{1}.chains;
+        for i = 2:opts.nWorkers
+            o.chains = [o.chains o.workerOutput{i}.chains];
+            o.workerOutput{i}.chains = [];
+        end
+    end
+else
+    if opts.profiling
+        profile on
+    end
+    
+    s = Sampler(polytope, opts);
+    while s.terminate == 0
+        s.step();
+    end
+    s.finalize();
+    o = s.output;
+    
+    if opts.profiling
+        profile report
+    end
+end
+o.problem = polytope;
+o.opts = opts;
+
+if ~opts.rawOutput
+    o.ess = effective_sample_size(o.chains);
+    
+    y = [];
+    for i = 1:numel(o.ess)
+        chain_i = o.chains{i};
+        ess_i = o.ess{i};
+        N_i = size(chain_i,2);
+        gap = ceil(N_i/ min(o.ess{i}, [], 'all'));
+        for j = 1:size(ess_i,2)
+            y_ij = chain_i(:, ceil(opts.nRemoveInitialSamples*gap:gap:N_i));
+            y = [y y_ij];
+        end
+    end
+    o.samples = y;
+    o.summary = summary(o);
 end
 
-o = s.output;
-o.summary = summary(o.samples);
-% if (o.done == false)
-%     o.ess = effective_sample_size(o.samples);
-%     o.nSamples = min(o.ess);
-%     o.mixingIter = size(o.samples,2) / o.nSamples * o.iterPerRecord;
-% end
-% o.mixingRecord = size(o.samples,2) / o.nSamples;
-% 
-% opts.outputFunc('sample:end', 'See log.text for full output; samples in o.samples\n');
-% opts.outputFunc('sample:end', 'Mixing Time (in iter): %f,  Effective Sample Size: %i\n', o.mixingIter, round(min(o.ess)));
+o.prepareTime = prepareTime;

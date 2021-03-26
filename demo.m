@@ -7,7 +7,7 @@ P.bineq = 1;
 P.lb = zeros(d, 1);
 
 o = sample(P, 500); % Number of samples = 500
-s = thin_samples(o.samples);  % extract "independent" samples from the dependent samples
+s = o.samples;  % "independent" samples extracted from the dependent samples chains
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
 uniformtest(o, struct('toPlot', true));
@@ -25,17 +25,15 @@ for i=1:d
     P.Aeq(d+i,i:d:d^2)=1;
 end
 
-fid = fopen('demo.log', 'w');
 opts = default_options();
 opts.maxTime = 20; % Stop in 20 sec
-opts.logFunc = @(tag, msg) fprintf(fid, '%s', msg); % Output the debug log to demo.log
+opts.logging = 'demo_ignore.log'; % Output the debug log to demo_ignore.log
 o = sample(P, +Inf, opts);
-s = thin_samples(o.samples);
+s = o.samples;
 figure;
-histogram(s(1,:))
+histogram(s(1,:), 'BinLimits', [0, 0.5])
 title('Marginal of first coordinate of Birkhoff polytope');
 drawnow()
-fclose(fid);
 
 %% Example 3: Sample Gaussian distribution restricted to a hypercube
 initSampler
@@ -50,24 +48,12 @@ P.ddf = @(x) ones(d,1);
 opts = default_options();
 opts.maxStep = 10000; % Stop after 10000 iter
 o = sample(P, +Inf, opts);
-s = thin_samples(o.samples);
 figure;
-histogram(s(:))
+histogram(o.samples(:), 'BinLimits', [-1, 1])
 title('Marginal of Gaussian distribution restricted to hypercube');
+drawnow()
 
-%% Example 4: Read a polytope according to Cobra format
-initSampler
-
-load(fullfile('coverage','Recon1.mat'))
-P = struct;
-P.lb = model.lb;
-P.ub = model.ub;
-P.b = model.b;
-P.A = model.S;
-o = sample(P, 500);
-[pVal] = uniformtest(o, struct('toPlot', true));
-
-%% Example 5: Brownian bridge
+%% Example 4: Brownian bridge
 initSampler
 
 P = struct; d = 1000;
@@ -85,5 +71,34 @@ P.ddf = @(x) [zeros(d,1);ones(d-1,1)];
 
 o = sample(P, 100);
 figure;
-plot(o.samples(1:d,end))
+plot(o.samples(1:d, end))
 title('Brownian bridge');
+
+%% Example 5: Read a polytope according to Cobra format
+initSampler
+
+load(fullfile('coverage','Recon1.mat'))
+P = struct;
+P.lb = model.lb;
+P.ub = model.ub;
+P.b = model.b;
+P.A = model.S;
+o = sample(P, 500);
+[pVal] = uniformtest(o, struct('toPlot', true));
+
+%% Example 6: Run the sampler in parallel
+initSampler
+if isempty(ver("parallel"))
+    fprintf('Parallel Computing Toolbox is required for this example')
+else
+    load(fullfile('coverage','Recon1.mat'))
+    P = struct;
+    P.lb = model.lb;
+    P.ub = model.ub;
+    P.b = model.b;
+    P.A = model.S;
+    opts = default_options();
+    opts.nWorkers = 0;  % 0 means the default number of workers in the Parallel Computing Toolbox
+    o = sample(P, 1000, opts);
+    [pVal] = uniformtest(o, struct('toPlot', true));
+end

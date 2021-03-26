@@ -1,25 +1,34 @@
 classdef Polytope < handle
-    % The problem is defined by exp(-f(x)) over {Tx+y where Ax=b, lb <= x <= ub}
+    % The problem is defined by exp(-f(z)) over {z = Tx+y where Ax = b, lb <= x <= ub}
     properties
-        A   % constraint matrix A
-        b   % constraint vector b
-        T	% transformation T of the domain
-        y	% shift of the domain
+        A       % constraint matrix A
+        b       % constraint vector b
+        T       % transformation T of the domain
+        y       % shift of the domain
         barrier % TwoSidedBarrier
-        f	% the objective function and its derivatives in the original space
+        f       % the objective function and its derivatives in the original space
         df
         ddf
-        %dddf
-        originalProblem
-        
+        original
         opts
-        
-        % private variables
+        vdim	% oracles assumes each vector is along "dim"-th dimension
+    end
+    
+    % derived variables 
+    properties
         center      % analytic center
         n
         
-        % TODO: Assumed each row of T contains at most 1 non-zero
-        T2          % used for computing ddf
+        fZero       % whether f is completely zero
+        fHandle     % whether f is handle or not
+        dfHandle    % whether df is handle or not
+        ddfHandle   % whether ddf is handle or not
+        
+        % Assumed each row of T contains at most 1 non-zero
+        Tidx        % T x = x(Tidx) .* Ta
+        Ta          % T x = x(Tidx) .* Ta
+        Tdf         % T' * df
+        Tddf        % (T.^2)' * ddf
     end
     
     methods
@@ -34,7 +43,6 @@ classdef Polytope < handle
             %  .f
             %  .df
             %  .ddf
-            %  .dddf
             % describing a log-concave distribution given by
             %   exp(-sum f_i(x_i))
             %       over
@@ -59,7 +67,7 @@ classdef Polytope < handle
                 return;
             end
             P = standardize_problem(P);
-            o.originalProblem = P;
+            o.original = P;
             
             %% Convert the polytope into {Ax=b, lb<=x<=ub} form
             nP = size(P.Aeq, 2);
@@ -71,46 +79,51 @@ classdef Polytope < handle
             o.f = P.f;
             o.df = P.df;
             o.ddf = P.ddf;
-            %o.dddf = P.dddf;
             lb = [P.lb; zeros(nIneq, 1)];
             ub = [P.ub; Inf*ones(nIneq, 1)];
             o.center = [];
-            o.n = length(lb);
-            o.opts = opts;
+            o.opts = opts.presolve;
+            
+            o.fHandle = isa(o.f, 'function_handle');
+            o.dfHandle = isa(o.df, 'function_handle');
+            o.ddfHandle = isa(o.ddf, 'function_handle');
+            o.vdim = 1;
+            
+            if (~o.fHandle || ~o.dfHandle || ~o.ddfHandle)
+                normf = norm(o.f) + norm(o.df) + norm(o.ddf);
+                o.fZero = (normf == 0);
+            end
             
             %% Move all variables with lb == ub to Ax = b
             fixedVars = dblcmp(ub, lb);
             if sum(fixedVars) ~= 0
-                I = speye(o.n);
+                I = speye(length(lb));
                 o.A = [I(fixedVars, :); o.A];
                 o.b = [(lb(fixedVars)+ub(fixedVars))/2; o.b];
                 ub(fixedVars) = +Inf;
                 lb(fixedVars) = -Inf;
-                o.n = length(lb);
             end
             o.barrier = TwoSidedBarrier(lb, ub);
-            o.barrier.extraHessian = o.opts.extraHessian;
+            o.barrier.extraHessian = opts.extraHessian;
             
             %% Update the transformation Tx + y
-            o.T = sparse(nP, o.n);
+            o.T = sparse(nP, length(lb));
             o.T(:,1:nP) = speye(nP);
-            o.T2 = o.T.^2;
+            o.updateT();
             o.y = zeros(nP, 1);
             
             %% Simplify the polytope
             if o.opts.runSimplify
                 o.simplify();
+                
+                if isempty(o.center)
+                    o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
+                    o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
+                end
+                o.rescale(o.center);
+                o.shift_barrier(o.center);
             else
                 o.reorder();
-            end
-            
-            %% Find an initial point
-            if ~isempty(P.center)
-                o.center = P.center;
-            elseif ~isempty(o.center)
-                o.opts.weightedBarrier = false;
-                o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
-                o.center = analytic_center(o.A, o.b, o, o.opts, o.barrier.center);
             end
             
             %% Give Warning for Unbounded Polytope
@@ -119,13 +132,12 @@ classdef Polytope < handle
                 warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
             end
             
-            %% Compute the initial weight for weighted barrier
-%             if opts.weightedBarrier
-%                 o.barrier = WeightedTwoSidedBarrier(o.barrier.lb, o.barrier.ub, ones(o.n,1));
-%                 o.barrier.extraHessian = o.opts.extraHessian;
-%                 o.opts.weightedBarrier = true;
-%                 o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
-%             end
+            %% Use the user-given center if it is given
+            if ~isempty(P.center)
+                o.center = o.T\(P.center - o.y);
+            elseif isempty(o.center)
+                [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
+            end
         end
         
         function w = estimate_width(o, x)
@@ -136,7 +148,7 @@ classdef Polytope < handle
             if nargin == 1 || isempty(x)
                 hess = ones(size(o.A,2), 1);
             else
-                hess = o.hessian(x);
+                [~, hess] = o.analytic_center_oracle(x);
             end
             solver.setScale(1./hess);
             tau = solver.leverageScoreComplement();
@@ -163,12 +175,68 @@ classdef Polytope < handle
             o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
         end
         
-        function grad = gradient(o, x)
-            grad = o.barrier.gradient(x) + o.T' * o.df(o.T * x + o.y);
+        function [g, h] = analytic_center_oracle(o, x)
+            [~, g, h] = o.f_oracle(x);
+            g = g + o.barrier.gradient(x);
+            h = h + o.barrier.hessian(x);
         end
         
-        function h = hessian(o, x)
-            h = o.barrier.hessian(x) + o.T2' * o.ddf(o.T * x + o.y);
+        function [f, g, h] = f_oracle(o, x)
+            if (o.fZero)
+                f = 0; g = 0; h = 0;
+                return;
+            end
+            
+            if o.vdim == 2
+                x = x';
+            end
+            
+            if (o.fHandle || o.dfHandle || o.ddfHandle)
+                z = o.Ta .* x(o.Tidx,:) + o.y;
+            end
+            
+            k = size(x, 2);
+            if o.fHandle
+                f = zeros(1, k);
+                for i = 1:k
+                    f(i) = o.f(z(:,i));
+                end
+            else
+                if (~o.dfHandle) % when f is just linear
+                    f = o.Tdf' * x;
+                else
+                    f = o.f * ones(1,k);
+                end
+            end
+            
+            if o.dfHandle
+                g = zeros(o.n, k);
+                for i = 1:k
+                    g(o.Tidx, i) = o.Ta .* o.df(z(:,i));
+                end
+            else % when f is just linear
+                g = o.Tdf * ones(1,k);
+            end
+            
+            if o.ddfHandle
+                h = zeros(o.n, k);
+                for i = 1:k
+                    h(o.Tidx, i) = (o.Ta.*o.Ta) .* o.ddf(z(:,i));
+                end
+            else
+                h = o.Tddf * ones(1,k);
+            end
+            
+            if o.vdim == 2
+                f = f';
+                g = g';
+                h = h';
+            end
+        end
+        
+        function set_vdim(o, vdim)
+            o.vdim = vdim;
+            o.barrier.set_vdim(vdim);
         end
     end
     
@@ -187,20 +255,39 @@ classdef Polytope < handle
             o.A = o.A * S;
             o.y = o.y + o.T * z;
             o.T = o.T * S;
-            o.T2 = o.T.^2;
+            o.updateT();
         end
         
-        function rescale(o)
+        function rescale(o, x)
             % Rescale the problem so it is in a better numerical form.
             
             % do not rescale if A has zero or one contraints/variables
             if min(size(o.A)) <= 1, return; end
             
-            [cscale,rscale] = gmscale(o.A, 0, 0.9);
+            if nargin == 1 || isempty(x)
+                hess = ones(size(o.A,2), 1);
+            else
+                [~, hess] = o.analytic_center_oracle(x);
+            end
+            
+            [cscale,rscale] = gmscale(o.A./sqrt(hess)', 0, 0.9);
             o.A = spdiag(1./rscale) * o.A;
             o.b = o.b./rscale;
-            o.barrier.update(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
+            o.barrier.set_bound(o.barrier.lb .* cscale, o.barrier.ub .* cscale);
             o.append_map(spdiag(1./cscale));
+            
+            if ~isempty(o.center)
+                o.center = o.center .* cscale;
+            end
+        end
+        
+        function shift_barrier(o, x)
+            o.append_map(speye(numel(x)), x);
+            o.barrier.set_bound(o.barrier.lb - x, o.barrier.ub - x);
+            
+            if ~isempty(o.center)
+                o.center = o.center - x;
+            end
         end
         
         function remove_fixed_variables(o)
@@ -221,11 +308,10 @@ classdef Polytope < handle
             % remove all fixed variables
             S = speye(o.n);
             o.append_map(S(:,~fixedVars), x.*fixedVars);
-            o.barrier.update(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
+            o.barrier.set_bound(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
             if ~isempty(o.center)
                 o.center = o.center(~fixedVars);
             end
-            o.n = length(o.barrier.lb);
         end
         
         function reorder(o)
@@ -278,7 +364,6 @@ classdef Polytope < handle
         
         function extract_collapsed_variables(o)
             % Extract collapsed variables and move it to constraints
-            o.opts.weightedBarrier = false;
             o.opts.logFunc('Polytope:simplify', ['Run interior point methods to detect fixed coordinates:' newline]);
             [o.center, Ac, bc] = analytic_center(o.A, o.b, o, o.opts, o.center);
             
@@ -326,10 +411,38 @@ classdef Polytope < handle
             end
             
             o.T = [o.T sparse(size(o.T,1), length(ub)-size(o.T,2))];
-            o.T2 = o.T.^2;
+            o.updateT();
             o.A = A_;
             o.n = length(lb);
-            o.barrier.update(lb, ub);
+            o.barrier.set_bound(lb, ub);
         end
+        
+        function updateT(o)
+            % assume each row of T has at most 1 non-zeros
+            assert(max(full(sum(o.T~=0,2))) <= 1);
+            
+            o.n = size(o.T,2);
+            o.Tidx = int32((o.T~=0) * (1:o.n)');
+            o.Tidx(o.Tidx==0) = 1;
+            o.Ta = o.T * ones(o.n,1);
+            
+            if (~o.dfHandle) % when f is just linear
+                if numel(o.df) == 0
+                    o.Tdf = 0;
+                else
+                    o.Tdf = o.T' * o.df;
+                end
+            end
+            
+            if (~o.ddfHandle)
+                if numel(o.ddf) == 0
+                    o.Tddf = 0;
+                else
+                    o.Tddf = (o.T.*o.T)' * o.ddf;
+                end
+            end
+        end
+        
+        
     end
 end

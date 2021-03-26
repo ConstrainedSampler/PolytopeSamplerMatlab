@@ -992,6 +992,14 @@ inline bool qd_real::is_negative() const {
   return (x[0] < 0.0);
 }
 
+inline qd_real::operator bool() const {
+    return (x[0] != 0.0);
+}
+
+inline qd_real::operator double() const {
+    return to_double(*this);
+}
+
 inline dd_real to_dd_real(const qd_real &a) {
   return dd_real(a[0], a[1]);
 }

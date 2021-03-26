@@ -8,20 +8,27 @@ function [rhat_val] = rhat(x)
 %Output:
 % rhat - a dim x 1 vector where ess(i) is the effective sample size of x(i,:).
 
-  [~, N] = size(x);
-  if mod(N, 2) == 1
-      x = x(:, 1:N-1);
-      N = N-1;
-  end
-  
-  N = N/2;
-  y = x(:, 1: N);
-  x = x(:, N+1: 2*N);
-  
-  b_div_n = var([mean(x, 2), mean(y, 2)], 0, 2);
-  w = mean([var(x, 0, 2), var(y, 0, 2)], 2);
-  
-  sig_2p = (N-1)/N .* w + b_div_n;
-  
-  rhat_val = 3/2 * sig_2p ./w - (N-1)/ (2*N);
+% TODO: this is not a correct algorithm. Fix it.
+% Now the input is always
+% cell of matrices dim x N. Each matrix is a chain.
+% What is the correct formula in this case?
+% Update the comment also. It is wrong now.
+x = cell2mat(x);
+
+[~, N] = size(x);
+if mod(N, 2) == 1
+    x = x(:, 1:N-1);
+    N = N-1;
+end
+
+N = N/2;
+y = x(:, 1: N);
+x = x(:, N+1: 2*N);
+
+b_div_n = var([mean(x, 2), mean(y, 2)], 0, 2);
+w = mean([var(x, 0, 2), var(y, 0, 2)], 2) + eps;
+
+sig_2p = (N-1)/N .* w + b_div_n;
+
+rhat_val = 3/2 * sig_2p ./w - (N-1)/ (2*N);
 end

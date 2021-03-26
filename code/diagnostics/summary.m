@@ -1,25 +1,33 @@
-function smry = summary(spls)
-%smry = summary(spls)
-%compute summary of samples spls
+function smry = summary(o)
+%smry = summary(o)
+%compute summary of samples
 %
 %Input:
-% spls - a dim x N vector, where N is the length of the chain.
+% o - the samples object outputted by sample
 %
 %Output:
-% smry - a table summarizing the mean and ess and rhat of spls.
+% smry - a table summarizing the mean and ess and rhat of samples.
 
+% compute ess by summing over all chains
+ess = 0;
+for i = 1:numel(o.ess)
+    ess_i = o.ess{i};
+    for j = 1:size(ess_i,2)
+        ess = ess + ess_i(:,j);
+    end
+end
 
-st = std(spls, 0, 2);
-m = mean(spls,2);
-per25 =  prctile(spls, 25, 2);
-per50 = prctile(spls, 50, 2);
-per75 = prctile(spls, 75, 2);
-ess = effective_sample_size(spls);
-rh = rhat(spls);
-
-[d, ~] = size(spls);
+% compute the rest of the summary
+rh = rhat(o.chains);
+st = std(o.samples, 0, 2);
+m = mean(o.samples,2);
+Y = prctile(o.samples, [25 50 75], 2);
+per25 = Y(:, 1);
+per50 = Y(:, 2);
+per75 = Y(:, 3);
+d = size(o.samples, 1);
 
 smry = table(m, st, per25, per50, per75, ess, rh, 'VariableNames',...
-    {'mean','std','25%', '50%', '75%', 'n_ess', 'r_hat'}, ...
+    {'mean','std','25%', '50%', '75%', 'ess', 'r_hat'}, ...
     'RowNames', 'samples['+string(1:d)+']');
 end

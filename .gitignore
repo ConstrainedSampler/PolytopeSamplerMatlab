@@ -2,6 +2,7 @@
 *.log
 *.icloud
 *.m~
+*.pdb
 *_ignore*
 .DS_Store
 paper/
