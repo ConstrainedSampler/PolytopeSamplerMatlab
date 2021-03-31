@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 
 /* include/qd/qd_config.h.  Generated from qd_config.h.in by configure.  */
 #ifndef _QD_QD_CONFIG_H
@@ -26,8 +27,7 @@
    If correctly rounded multiply-add is not available (or if unsure), 
    keep it undefined.*/
 #ifndef QD_FMS
-double fms(double a, double b, double c);
-#define QD_FMS(a, b, c) fms(a,b,c)
+#define QD_FMS(a, b, c) std::fma(a,b,-c)
 /* #undef QD_FMS */
 #endif
 
