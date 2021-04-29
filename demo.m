@@ -38,7 +38,7 @@ drawnow()
 %% Example 3: Sample Gaussian distribution restricted to a hypercube
 initSampler
 
-P = struct; d = 100;
+P = struct; d = 1000;
 P.lb = -ones(d,1);
 P.ub = ones(d,1);
 P.f = @(x) x'*x/2;
