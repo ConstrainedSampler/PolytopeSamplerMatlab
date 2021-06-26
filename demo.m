@@ -6,7 +6,7 @@ P.Aineq = ones(1, d);
 P.bineq = 1;
 P.lb = zeros(d, 1);
 
-o = sample(P, 500); % Number of samples = 500
+o = sample(P, 2000); % Number of samples = 2000
 s = thin_samples(o.samples);  % extract "independent" samples from the dependent samples
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
