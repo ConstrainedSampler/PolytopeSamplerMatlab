@@ -37,13 +37,24 @@ else
 end
 
 polytope = Polytope(problem, opts);
-assert(polytope.n > 0, 'The domain consists only a single point.');
 
 if ischar(opts.logging) || isstring(opts.logging)
     fclose(fid);
 end
 
 prepareTime = toc(t);
+
+
+%% Check the trivial case
+if polytope.n == 0
+    warning('The domain consists only a single point.');
+    o = struct;
+    o.prepareTime = prepareTime;
+    o.sampleTime = 0;
+    o.problem = polytope;
+    o.samples = polytope.center;
+    return
+end
 
 %% Set up workers if nWorkers ~= 1
 if opts.nWorkers ~= 1 && ~isempty(ver("parallel"))
