@@ -21,13 +21,20 @@ end
 rh = rhat(o.chains);
 st = std(o.samples, 0, 2);
 m = mean(o.samples,2);
-Y = prctile(o.samples, [25 50 75], 2);
-per25 = Y(:, 1);
-per50 = Y(:, 2);
-per75 = Y(:, 3);
 d = size(o.samples, 1);
 
-smry = table(m, st, per25, per50, per75, ess, rh, 'VariableNames',...
-    {'mean','std','first', 'second', 'third', 'ess', 'r_hat'}, ...
-    'RowNames', 'samples['+string(1:d)+']');
+if isempty(ver('stats'))
+    smry = table(m, st,  ess, rh, 'VariableNames',...
+        {'mean', 'std', 'ess', 'r_hat'}, ...
+        'RowNames', 'samples['+string(1:d)+']');
+else
+    Y = prctile(o.samples, [25 50 75], 2);
+    per25 = Y(:, 1);
+    per50 = Y(:, 2);
+    per75 = Y(:, 3);
+
+    smry = table(m, st, per25, per50, per75, ess, rh, 'VariableNames',...
+        {'mean', 'std', 'first', 'second', 'third', 'ess', 'r_hat'}, ...
+        'RowNames', 'samples['+string(1:d)+']');
+end
 end

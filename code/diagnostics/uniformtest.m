@@ -20,7 +20,8 @@ function [pVal] = uniformtest(o, opts)
 if nargin == 1, opts = struct; end
 
 if isempty(ver('stats'))
-    error('This function requires the Statistics and Machine Learning Toolbox');
+    warning('uniformtest requires the Statistics and Machine Learning Toolbox');
+    return
 end
 assert(~o.opts.rawOutput, 'This function does not support raw output');
 

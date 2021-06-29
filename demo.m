@@ -84,7 +84,7 @@ P.ub = model.ub;
 P.b = model.b;
 P.A = model.S;
 o = sample(P, 500);
-[pVal] = uniformtest(o, struct('toPlot', true));
+uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
 initSampler
