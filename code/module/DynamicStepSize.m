@@ -8,7 +8,7 @@ classdef DynamicStepSize < handle
         rejectSinceShrink
         ODEStepSinceShrink
         effectiveStep
-        warmupFinished = false
+        %warmupFinished = false
     end
     
     methods
@@ -23,20 +23,20 @@ classdef DynamicStepSize < handle
         
         function o = step(o, s)
             % Warmup phase
-            warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
-            if warmupRatio < 1 && ~o.warmupFinished
-                s.stepSize = 1e-6 + s.opts.initalStepSize * warmupRatio;
-                s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
-                return;
-            end
-            
-            if (~o.warmupFinished)
-                s.i = 1;
-                s.acceptedStep = 0;
-                s.nEffectiveStep = 0;
-                s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
-                o.warmupFinished = true;
-            end
+%             warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
+%             if warmupRatio < 1 && ~o.warmupFinished
+%                 s.stepSize = 1e-6 + s.opts.initalStepSize * warmupRatio;
+%                 s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
+%                 return;
+%             end
+%             
+%             if (~o.warmupFinished)
+%                 s.i = 1;
+%                 s.acceptedStep = 0;
+%                 s.nEffectiveStep = 0;
+%                 s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
+%                 o.warmupFinished = true;
+%             end
             
             bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
             o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;

@@ -51,7 +51,7 @@ for iter = 1:opts.ipmMaxIter
     primalErrMin = min(primalErr,primalErrMin); primalErr = norm(rx)/primalFactor;
     dualErrLast = dualErr; dualErr = norm(rs)/dualFactor;
     feasible = f.barrier.feasible(x);
-    if (((dualErr > (1-0.9*tConst)*dualErrLast) && (primalErr > 10 * primalErrMin)) || ~feasible)
+    if ((dualErr > (1-0.9*tConst)*dualErrLast) || (primalErr > 10 * primalErrMin) || ~feasible)
         dist = f.barrier.boundary_distance(x);
         idx = find(dist < opts.ipmDistanceTol);
         if ~isempty(idx), break; end

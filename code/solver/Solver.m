@@ -1,7 +1,6 @@
 function o = Solver(A, precision, k)
     if nargin < 2, precision = 'double'; end
     if nargin < 3, k = 0; end
-    
     if (strcmp(precision,'double'))
         precision = 1e-6;
     elseif (strcmp(precision,'doubledouble'))

@@ -21,7 +21,7 @@ function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
         if (max(dist,[],'all') < opts.implicitTol)
             done = 1;
             break;
-        elseif any(~isfinite(dist),'all')% || dist > 1e8
+        elseif any(dist > 1e16, 'all')
             break;
         end
     end

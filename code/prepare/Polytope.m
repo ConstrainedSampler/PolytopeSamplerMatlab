@@ -121,10 +121,9 @@ classdef Polytope < handle
                     o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
                     o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
                 end
-                %o.rescale(o.center);
+                o.rescale(o.center);
                 o.shift_barrier(o.center);
                 o.reorder();
-                o.remove_fixed_variables();
             else
                 o.reorder();
             end
@@ -140,6 +139,17 @@ classdef Polytope < handle
                 o.center = o.T\(P.center - o.y);
             elseif isempty(o.center)
                 [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
+            end
+            
+            %% Check the output
+            [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
+            solver = Solver(o.A, 'doubledouble');
+            [~, hess] = o.analytic_center_oracle(o.center);
+            solver.setScale(1./hess);
+            o.center = o.center + (o.A' * solver.solve(o.b - o.A*o.center))./hess;
+            
+            if (any(o.center > o.barrier.ub) || any(o.center < o.barrier.lb))
+                error('Polytope:Infeasible', 'The algorithm cannot find a feasible point.');
             end
         end
         
@@ -163,15 +173,15 @@ classdef Polytope < handle
             o.rescale();
             o.split_dense_cols(o.opts.splitDenseCols);
             o.reorder();
-            nTmp = +Inf;
-            o.remove_dependent_rows();
-            o.remove_fixed_variables();
-            
-            while o.n < nTmp
-                nTmp = o.n;
-                o.extract_collapsed_variables();
-                o.remove_dependent_rows();
-                o.remove_fixed_variables();
+            changed = true;
+            while changed
+                while changed
+                    changed = false;
+                    changed = changed || o.remove_dependent_rows();
+                    changed = changed || o.remove_fixed_variables();
+                end
+                
+                changed = o.extract_collapsed_variables();
             end
             o.reorder();
             o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
@@ -293,7 +303,7 @@ classdef Polytope < handle
             end
         end
         
-        function remove_fixed_variables(o)
+        function changed = remove_fixed_variables(o)
             % Remove fixed variables implied by Ax = b
             tol = o.opts.removeFixedVariablesTol;
             
@@ -306,14 +316,16 @@ classdef Polytope < handle
             fixedVars = (d < tol*(1+abs(x)));
             if sum(fixedVars) > 0
                 o.opts.logFunc('Polytope:simplify', sprintf('Removed %i fixed coordinates.\n', sum(fixedVars)));
-            end
-            
-            % remove all fixed variables
-            S = speye(o.n);
-            o.append_map(S(:,~fixedVars), x.*fixedVars);
-            o.barrier.set_bound(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
-            if ~isempty(o.center)
-                o.center = o.center(~fixedVars);
+                changed = true;
+                % remove all fixed variables
+                S = speye(o.n);
+                o.append_map(S(:,~fixedVars), x.*fixedVars);
+                o.barrier.set_bound(o.barrier.lb(~fixedVars), o.barrier.ub(~fixedVars));
+                if ~isempty(o.center)
+                    o.center = o.center(~fixedVars);
+                end
+            else
+                changed = false;
             end
         end
         
@@ -343,7 +355,7 @@ classdef Polytope < handle
             o.A = o.A(p,:); o.b = o.b(p);
         end
         
-        function remove_dependent_rows(o)
+        function changed = remove_dependent_rows(o)
             % Remove redundant rows in A
             
             % With zero row, diag(L) does not indicate dependent rows
@@ -357,18 +369,22 @@ classdef Polytope < handle
             I = find((dL > 1e-12) .* (dL < 1e+64));
             
             if size(I,1) == size(o.A,1)
+                changed = false;
                 return; % This is important for empty matrix
             end
             
             o.opts.logFunc('Polytope:simplify', sprintf('Removed %i redundant constraints.\n', size(o.A,1) - size(I, 1)));
             o.A = o.A(I, :);
             o.b = o.b(I);
+            changed = true;
         end
         
-        function extract_collapsed_variables(o)
+        function changed = extract_collapsed_variables(o)
             % Extract collapsed variables and move it to constraints
             o.opts.logFunc('Polytope:simplify', ['Run interior point methods to detect fixed coordinates:' newline]);
             [o.center, Ac, bc] = analytic_center(o.A, o.b, o, o.opts, o.center);
+            
+            changed = ~isempty(Ac);
             
             % update the A and b
             o.A = [Ac; o.A];

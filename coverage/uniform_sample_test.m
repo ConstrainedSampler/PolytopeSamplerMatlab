@@ -18,17 +18,20 @@ s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
 s.printFormat.nStep = '10i';
 s.printFormat.avgAcc = '15.3e';
-s.testFunc = @(name) test_func(name, num_samples);
+s.testFunc = @(name) test_func(name, num_samples, debug);
 s.test();
 end
 
-function o = test_func(name, num_samples)
+function o = test_func(name, num_samples, debug)
 
 % load the problem and truncate it to make it bounded
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
 P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+if debug
+    P_opts.module{end+1} = 'ProgressBar';
+end
 sample_out = sample(P, num_samples, P_opts);
 
 o = {};
