@@ -18,7 +18,7 @@ t = tic;
 if (nargin <= 2)
     opts = default_options();
 else
-    opts = setfield(opts, default_options());
+    opts = setfield(default_options(), opts);
 end
 opts.startTime = t;
 opts.N = N;

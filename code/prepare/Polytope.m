@@ -18,6 +18,7 @@ classdef Polytope < handle
     properties
         center      % analytic center
         n
+        width       % estimate of width of each variable
         
         fZero       % whether f is completely zero
         fHandle     % whether f is handle or not
@@ -120,15 +121,17 @@ classdef Polytope < handle
                     o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
                     o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
                 end
-                o.rescale(o.center);
+                %o.rescale(o.center);
                 o.shift_barrier(o.center);
+                o.reorder();
+                o.remove_fixed_variables();
             else
                 o.reorder();
             end
             
             %% Give Warning for Unbounded Polytope
-            w = o.estimate_width(o.center);
-            if (max(w) > 1e10)
+            o.width = o.estimate_width(o.center);
+            if (max(o.width) > 1e10)
                 warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
             end
             
@@ -152,7 +155,7 @@ classdef Polytope < handle
             end
             solver.setScale(1./hess);
             tau = solver.leverageScoreComplement();
-            w = sqrt(tau./hess)+eps;
+            w = sqrt((max(tau,0))./hess)+eps;
         end
         
         function simplify(o)
@@ -169,7 +172,6 @@ classdef Polytope < handle
                 o.extract_collapsed_variables();
                 o.remove_dependent_rows();
                 o.remove_fixed_variables();
-                
             end
             o.reorder();
             o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
@@ -264,10 +266,11 @@ classdef Polytope < handle
             % do not rescale if A has zero or one contraints/variables
             if min(size(o.A)) <= 1, return; end
             
-            if nargin == 1 || isempty(x)
+            if nargin == 1 || isempty(x) || isempty(o.width)
                 hess = ones(size(o.A,2), 1);
             else
                 [~, hess] = o.analytic_center_oracle(x);
+                hess = hess + 1./(o.width.*o.width);
             end
             
             [cscale,rscale] = gmscale(o.A./sqrt(hess)', 0, 0.9);
@@ -299,7 +302,7 @@ classdef Polytope < handle
             solver = Solver(o.A, 'doubledouble');
             solver.setScale(ones(size(o.A,2),1));
             x = o.A'*solver.solve(o.b);
-            x(abs(x) < 1e-8) = 0; 
+            x(abs(x) < tol) = 0; 
             fixedVars = (d < tol*(1+abs(x)));
             if sum(fixedVars) > 0
                 o.opts.logFunc('Polytope:simplify', sprintf('Removed %i fixed coordinates.\n', sum(fixedVars)));
