@@ -20,8 +20,10 @@ classdef DynamicStepSize < handle
             o.ODEStepSinceShrink = 0;
             o.effectiveStep = 0;
             
-            if s.opts.warmUpStep > 0
-                s.stepSize = 1e-5;
+            if o.opts.warmUpStep > 0
+                s.stepSize = 1e-4;
+            else
+                o.warmupFinished = true;
             end
         end
         
@@ -29,7 +31,7 @@ classdef DynamicStepSize < handle
             % Warmup phase
             warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
             if warmupRatio < 1 && ~o.warmupFinished
-                s.stepSize = 1e-5 + s.opts.initalStepSize * warmupRatio;
+                s.stepSize = s.opts.initalStepSize * min(warmupRatio+1e-4, 1);
                 s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
                 return;
             end
