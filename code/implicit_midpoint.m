@@ -7,7 +7,7 @@ function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
     
     % Step 2
     x2 = x1; v2 = v1;
-    nu = zeros(size(ham.A,1),1);
+    nu = zeros(size(x1,1),size(ham.A,1),1);
     for step = 1:opts.maxODEStep
         x2_old = x2;
         xmid = (x1+x2)/2;
@@ -18,10 +18,10 @@ function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
         v2 = v1 - h * dKdx;
         
         dist = ham.x_norm(xmid, x2-x2_old)/ h;
-        if (dist < opts.implicitTol)
+        if (max(dist,[],'all') < opts.implicitTol)
             done = 1;
             break;
-        elseif any(~isfinite(dist))% || dist > 1e8
+        elseif any(dist > 1e16, 'all')
             break;
         end
     end

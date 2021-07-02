@@ -12,16 +12,6 @@
 #include "qd_config.h"
 #include "qd_real.h"
 
-#include <immintrin.h>
-double fms(double a, double b, double c)
-{
-	__m128d a_packed = { a, a };
-	__m128d b_packed = { b, b };
-	__m128d c_packed = { c, c };
-	a_packed = _mm_fmsub_pd(a_packed, b_packed, c_packed);
-	return _mm_cvtsd_f64(a_packed);
-}
-
 /* Some useful constants. */
 const qd_real qd_real::_2pi = qd_real(6.283185307179586232e+00,
                                       2.449293598294706414e-16,

@@ -1,3 +1,4 @@
+% obj holds the default value
 function obj = setfield(obj, source)
     key = fieldnames(obj);
     for i = 1:length(key)

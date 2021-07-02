@@ -27,12 +27,12 @@ P = standardize_problem(P);
 
 % netlib LP are not bounded
 if contains(name, 'netlib/')
-    df = P.df(P.lb); % the df for netlib problem is a fixed vector
+    df = P.df; % the df for netlib problem is a fixed vector
     x = linprog(df, P.Aineq, P.bineq, P.Aeq, P.beq, P.lb, P.ub, struct('Display','none'));
     threshold = df' * x + abs(df)' * abs(x);
-    P.f = @(x) 0;
-    P.df = @(x) zeros(size(df));
-    P.ddf = @(x) zeros(size(df));
+    P.f = [];
+    P.df = [];
+    P.ddf = [];
     P.Aineq = [P.Aineq; df'];
     P.bineq = [P.bineq; threshold];
     P.ub = min(P.ub, 2 * max(abs(x)));

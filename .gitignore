@@ -1,5 +1,6 @@
 *.asv
 *.log
+*.icloud
 *.m~
 *.pdb
 *_ignore*

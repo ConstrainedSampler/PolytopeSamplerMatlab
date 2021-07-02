@@ -1,22 +1,14 @@
-#ifndef MEX_UTILS_H_
-#define MEX_UTILS_H_
-
-template<typename Tin, typename Tout>
-inline Tout convert(Tin x)
-{
-    return Tout(x);
-}
-
+#pragma once
 #include "mex.h"
 #include <cstdint>
-#include <type_traits>
 #include <typeinfo>
-#include "CSparse/cs.h"
-using namespace CSparse;
+#include <string>
+#include "PackedCSparse/SparseMatrix.h"
+using namespace PackedCSparse;
 
 namespace MexEnvironment
 {
-	typedef std::make_signed<mwIndex>::type mexIdx;
+    typedef std::make_signed<mwIndex>::type mexIdx;
     
     template <typename T> mxClassID mexType()
     {
@@ -38,22 +30,8 @@ namespace MexEnvironment
     MEX_TYPE_DEFINE(uint64_t, mxUINT64_CLASS);
     MEX_TYPE_DEFINE(float, mxSINGLE_CLASS);
     MEX_TYPE_DEFINE(double, mxDOUBLE_CLASS);
-    
-    /* ====== Errors ====== */
-    template <typename... Args>
-    void error(const char *str, Args... args)
-    {
-        char *buffer = (char*)mxCalloc(1024, sizeof(char));
-        sprintf(buffer, str, args...);
-        throw buffer;
-    }
-    
-    template <typename... Args>
-    void mexAssert(bool val, const char *str, Args... args)
-    {
-        if (val == false)
-            error(str, args...);
-    }
+	
+	#undef MEX_TYPE_DEFINE
     
     /* ====== Parameters Info ====== */
     // Input
@@ -69,7 +47,7 @@ namespace MexEnvironment
     const mxArray *input()
     {
         if (rhs_id >= nrhs)
-            error("At least %d-th input parameters are required.", rhs_id + 1);
+            throw "At least " + std::to_string(rhs_id + 1) + " input parameters are required.";
         
         return prhs[rhs_id++];
     }
@@ -77,7 +55,7 @@ namespace MexEnvironment
     void output(mxArray *out)
     {
         if (lhs_id >= nlhs)
-            error("At least %d-th output parameters are required.", lhs_id + 1);
+            throw "At least " + std::to_string(lhs_id + 1) + " output parameters are required.";
         
         plhs[lhs_id++] = out;
     }
@@ -85,14 +63,13 @@ namespace MexEnvironment
     void errorSize(size_t mRequired, size_t nRequired, size_t m, size_t n)
     {
         if (mRequired == -1 || nRequired == -1)
-            error("Incorrect dimension for %d-th parameter. "
-                    "It should be (%i,%i) instead of (%i,%i)"
-                    " where -1 indicates any non-negative numbers.",
-                    rhs_id, mRequired, nRequired, m, n);
+            throw "Incorrect dimension for " + std::to_string(rhs_id) + "-th parameter. "
+                    "It should be (" + std::to_string(mRequired) + "," + std::to_string(nRequired) + ")"
+                    " where -1 indicates any non-negative numbers.";
         else
-            error("Incorrect dimension for %d-th parameter. "
-                    "It should be (%i,%i) instead of (%i,%i)",
-                    rhs_id, mRequired, nRequired, m, n);
+            throw "Incorrect dimension for " + std::to_string(rhs_id) + "-th parameter. "
+                    "It should be (" + std::to_string(mRequired) + "," + std::to_string(nRequired) + ")"
+                    " instead of (" + std::to_string(m) + "," + std::to_string(n) + ")";
     }
     
     /* ====== Various Input Functions ====== */
@@ -105,11 +82,11 @@ namespace MexEnvironment
         auto nDim = mxGetNumberOfDimensions(pt);
         
         if (mxIsComplex(pt) || mxIsSparse(pt))
-            error("The %d-th parameter should be a real full array.", rhs_id);
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be a real full array.";
         
         auto dims = mxGetDimensions(pt);
         if (mxGetClassID(pt) != mexType<T>())
-            error("The %d-th parameter should be %s.", rhs_id, typeid(T).name());
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be " + typeid(T).name();
         
         size_t m = dims[0], n = dims[1];
         
@@ -133,27 +110,37 @@ namespace MexEnvironment
         size_t m = 1, n = 1;
         return *inputArray<T>(m, n);
     }
+
+    template<typename T>
+    T inputScalar(T default_value)
+    {
+        T val = default_value;
+        if (rhs_id < nrhs)
+            val = inputScalar<T>();
+        return val;
+    }
     
     const char *inputString()
     {
         const mxArray *pt = input();
         if (mxIsChar(pt) != 1 || mxGetM(pt)!=1)
-            error("The %d-th parameter should be a string.", rhs_id);
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be a string.";
         
         return mxArrayToString(pt);
     }
-    
+
+    //A better thing to do is to have a matrix "view" and output the view
     template<typename Tv = double, typename Ti = mexIdx>
-    const cs<Tv, Ti> inputSparseArray(size_t mRequired = -1, size_t nRequired = -1)
+    SparseMatrix<Tv, Ti> inputSparseArray(size_t mRequired = -1, size_t nRequired = -1)
     {
         const mxArray* pt = input();
         size_t m, n, nzmax;
         Tv* x; mexIdx* ir, * jc;
         if (mxIsComplex(pt) || mxGetNumberOfDimensions(pt) != 2 || !mxIsSparse(pt))
-            error("The %d-th parameter should be a real sparse array.", rhs_id);
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be a real sparse array.";
         
         if (mxGetClassID(pt) != mexType<Tv>())
-            error("The %d-th parameter should be %s.", rhs_id, typeid(Tv).name());
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be " + typeid(Tv).name();
         
         m = mxGetM(pt); n = mxGetN(pt); nzmax = mxGetNzmax(pt);
         x = (Tv*)mxGetData(pt);
@@ -164,43 +151,45 @@ namespace MexEnvironment
             errorSize(mRequired, nRequired, m, n);
         
         if (!(std::is_same<Tv, double>::value || std::is_same<Tv, bool>::value))
-            error("The %d-th parameter should be %s.", rhs_id, typeid(Tv).name());
+            throw "The " + std::to_string(rhs_id) + "-th parameter should be " + typeid(Tv).name();
         
         
-        cs<Tv, Ti> A;
-        A.m = m; A.n = n; A.nzmax = jc[n];
-        A.i = ir; A.p = jc; A.x = x;
-        return A;
+        SparseMatrix<Tv, Ti> A(m, n, nzmax);
+        std::copy(ir, ir + nzmax, A.i.get());
+        std::copy(jc, jc + n + 1, A.p.get());
+        std::copy(x, x + nzmax, A.x.get());
+        return std::move(A);
     }
     
     /* ====== Various Output Functions ====== */
     template<typename Tv = double, typename Ti = mexIdx>
-    void outputSparseArray(cs<Tv, Ti>& A, bool patternOnly = false)
+    void outputSparseArray(const SparseMatrix<Tv, Ti>& A, bool patternOnly = false)
     {
         mxArray* pt;
+        Ti nz = A.nnz();
 		if (patternOnly)
 		{
-			pt = mxCreateSparseLogicalMatrix(A.m, A.n, A.nzmax);
+			pt = mxCreateSparseLogicalMatrix(A.m, A.n, nz);
 			bool* Ax = (bool*)mxGetData(pt);
-			for (size_t s = 0; s < A.nzmax; ++s)
-				Ax[s] = convert<Tv, bool>(A.x[s]);
+			for (Ti s = 0; s < nz; ++s)
+				Ax[s] = bool(A.x[s]);
 		}
 		else
 		{
-			pt = mxCreateSparse(A.m, A.n, A.nzmax, mxREAL);
+			pt = mxCreateSparse(A.m, A.n, nz, mxREAL);
 			double* Ax = (double*)mxGetData(pt);
-			for (size_t s = 0; s < A.nzmax; ++s)
-				Ax[s] = convert<Tv, double>(A.x[s]);
+			for (Ti s = 0; s < nz; ++s)
+				Ax[s] = double(A.x[s]);
 		}
         output(pt);
 
         mexIdx* Ai = (mexIdx*)mxGetIr(pt);
-        for (size_t s = 0; s < A.nzmax; ++s)
-            Ai[s] = convert<Ti, mexIdx>(A.i[s]);
+        for (Ti s = 0; s < nz; ++s)
+            Ai[s] = mexIdx(A.i[s]);
 
         mexIdx* Ap = (mexIdx*)mxGetJc(pt);
-        for (size_t s = 0; s <= A.n; ++s)
-            Ap[s] = convert<Ti, mexIdx>(A.p[s]);
+        for (Ti s = 0; s <= A.n; ++s)
+            Ap[s] = mexIdx(A.p[s]);
     }
 
     template<typename Tv>
@@ -222,7 +211,7 @@ namespace MexEnvironment
 	{
 		double *out = outputArray<double>(m, n);
 		for (size_t s = 0; s < m * n; ++s)
-			out[s] = convert<Tv, double>(x[s]);
+			out[s] = double(x[s]);
 	}
     
     template<typename T>
@@ -231,8 +220,6 @@ namespace MexEnvironment
         *outputArray<T>(1, 1) = val;
     }
 };
-
-
 
 int main();
 
@@ -252,10 +239,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
         mexErrMsgTxt(str);
     }
+    catch (std::string str)
+    {
+        mexErrMsgTxt(str.c_str());
+    }
     catch (const std::exception& e)
     {
         mexErrMsgTxt(e.what());
     }
     return;
 }
-#endif

@@ -1,46 +1,66 @@
 classdef MixingTimeEstimator < handle
+    % Module for estimate mixing time
+    
     properties
-        sampler
         opts
         
-        nextEstimateIter
-        ess
+        sampleRate = 0
+        sampleRateOutside = 0
+        estNumSamples = 0
+        estNumSamplesOutside = 0
+        nextEstimateStep
     end
     
     methods
-        function o = MixingTimeEstimator(sampler)
-            o.sampler = sampler;
-            o.opts = sampler.opts.MixingTimeEstimator;
-            o.nextEstimateIter = o.opts.startIter;
+        function o = MixingTimeEstimator(s)
+            o.opts = s.opts.MixingTimeEstimator;
+            o.nextEstimateStep = o.opts.initialStep;
         end
         
-        function o = initialize(o)
-            
-        end
-        
-        function o = propose(o)
-            
-        end
-        
-        function o = step(o)
-            s = o.sampler;
-            if s.i > o.nextEstimateIter
-                o.ess = effective_sample_size(s.samples);
-                s.mixingTime = s.iterPerRecord * size(s.samples,2) / min(o.ess);
-                lastEstNumSamples = s.i / s.mixingTime;
-                
-                if lastEstNumSamples > s.N
-                    s.terminate = 1;
-                    s.log('sample:end', '%i samples found.\n', lastEstNumSamples);
-                end
-                
-                estimateEndingIter = s.i + (s.N - lastEstNumSamples) * s.mixingTime;
-                o.nextEstimateIter = min(o.nextEstimateIter * o.opts.iterMultiplier, estimateEndingIter);
+        function o = step(o, s)
+            if mean(s.nEffectiveStep) > o.nextEstimateStep
+                ess = effective_sample_size(s.chains);
+                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                o.sampleRate = size(s.chains,1) / s.mixingTime;
+                o.estNumSamples = s.i * o.sampleRate;
+                s.share('sampleRate', o.sampleRate);
+                s.share('estNumSamples', o.estNumSamples);
+                o.update(s);
             end
         end
         
-        function o = finalize(o)
+        function o = sync(o, s)
+            o.estNumSamplesOutside = 0;
+            o.sampleRateOutside = 0;
+            for i = 1:s.nWorkers
+                if i ~= s.labindex
+                    if isfield(s.shared{i}, 'estNumSamples')
+                        o.estNumSamplesOutside = o.estNumSamplesOutside + s.shared{i}.estNumSamples;
+                    end
+                    
+                    if isfield(s.shared{i}, 'sampleRate')
+                        o.sampleRateOutside = o.sampleRateOutside + s.shared{i}.sampleRate;
+                    end
+                end
+            end
+            o.update(s);
+        end
+        
+        function o = update(o, s)
+            s.sampleRate = o.sampleRate + o.sampleRateOutside;
+            s.totalNumSamples = o.estNumSamples + o.estNumSamplesOutside;
+            if o.estNumSamples > s.opts.freezeMCMCAfterSamples
+                s.freezed = true;
+            end
             
+            if s.totalNumSamples > s.N
+                s.share('estNumSamples', o.estNumSamples);
+                s.terminate = 1;
+                s.log('sample:end', '%i samples found.\n', s.totalNumSamples);
+            else
+                estimateEndingStep = s.N / s.sampleRate * (mean(s.nEffectiveStep) / s.i);
+                o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
+            end
         end
     end
 end

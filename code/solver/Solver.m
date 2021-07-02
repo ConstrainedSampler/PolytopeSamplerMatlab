@@ -1,24 +1,18 @@
-function o = Solver(A, precision)
-    if numel(A) == 0
-        o = MatlabSolver(A);
-        return;
+function o = Solver(A, precision, k)
+    if nargin < 2, precision = 'double'; end
+    if nargin < 3, k = 0; end
+    if (strcmp(precision,'double'))
+        precision = 1e-6;
+    elseif (strcmp(precision,'doubledouble'))
+        precision = 0.0;
+    elseif ~isfloat(precision)
+        error('Unsupported precision mode');
     end
-    
-    if nargin == 1 || strcmp(precision, 'double')
-        o1 = MexSolver(A, 'double');
-        o2 = MatlabSolver(A);
-        m = size(o1.A,2);
-        
-        t1 = timeit(@() o1.setScale(rand(m,1) + 1));
-        t2 = timeit(@() o2.setScale(rand(m,1) + 1));
-        
-        
-        if t1 < t2
-            o = o1;
-        else
-            o = o2;
-        end
-    else
-        o = MexSolver(A, precision);
-    end
+
+    o = MexSolver(A, precision, k);
+    %if nargin < 3
+    %    o = MatlabSolver(A, precision);
+    %else
+    %    o = MultiMatlabSolver(A, precision, k);
+    %end
 end
