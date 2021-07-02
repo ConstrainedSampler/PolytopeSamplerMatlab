@@ -1,4 +1,4 @@
-debug = 0;
+debug = 1;
 problems = [];
 folders = {'basic', 'metabolic', 'netlib'};
 
