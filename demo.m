@@ -6,7 +6,7 @@ P.Aineq = ones(1, d);
 P.bineq = 1;
 P.lb = zeros(d, 1);
 o = sample(P, 2000); % Number of samples = 2000
-s = thin_samples(o.samples);  % extract "independent" samples from the dependent samples
+s = o.samples;
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
 uniformtest(o, struct('toPlot', true));
@@ -87,7 +87,7 @@ uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
 initSampler
-if isempty(ver("parallel"))
+if ~canUseParallelPool
     fprintf('Parallel Computing Toolbox is required for this example')
 else
     load(fullfile('coverage','Recon1.mat'))
