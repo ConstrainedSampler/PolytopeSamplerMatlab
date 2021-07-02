@@ -70,6 +70,7 @@ classdef TestSuite < handle
             if o.randomSeed ~= 0, rng(o.randomSeed); end
             warning('off', 'MATLAB:nearlySingularMatrix');
             warning('off', 'MATLAB:singularMatrix');
+            warning('off', 'MATLAB:rankDeficientMatrix');
             warning('off', 'uniformtest:size');
             warning('off', 'stats:adtest:OutOfRangePLow');
             warning('off', 'stats:adtest:OutOfRangePHigh');

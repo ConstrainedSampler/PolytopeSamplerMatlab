@@ -137,19 +137,17 @@ classdef Polytope < handle
             %% Use the user-given center if it is given
             if ~isempty(P.center)
                 o.center = o.T\(P.center - o.y);
-            elseif isempty(o.center)
+            else
+                %% Recenter again and make sure it is feasible
                 [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
-            end
-            
-            %% Check the output
-            [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
-            solver = Solver(o.A, 'doubledouble');
-            [~, hess] = o.analytic_center_oracle(o.center);
-            solver.setScale(1./hess);
-            o.center = o.center + (o.A' * solver.solve(o.b - o.A*o.center))./hess;
-            
-            if (any(o.center > o.barrier.ub) || any(o.center < o.barrier.lb))
-                error('Polytope:Infeasible', 'The algorithm cannot find a feasible point.');
+                solver = Solver(o.A, 'doubledouble');
+                [~, hess] = o.analytic_center_oracle(o.center);
+                solver.setScale(1./hess);
+                o.center = o.center + (o.A' * solver.solve(o.b - o.A*o.center))./hess;
+
+                if (any(o.center > o.barrier.ub) || any(o.center < o.barrier.lb))
+                    error('Polytope:Infeasible', 'The algorithm cannot find a feasible point.');
+                end
             end
         end
         

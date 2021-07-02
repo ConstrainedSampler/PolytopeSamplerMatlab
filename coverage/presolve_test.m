@@ -37,8 +37,10 @@ end
 % first solve it using matlab LP solver
 P_opts = default_options();
 P_opts.presolve.runSimplify = false;
+P.center = P.df; % avoid Polytope raise error of not finding a center
 P_opts.presolve.logFunc = @(tag, msg) 0;
 P0 = Polytope(P, P_opts);
+P.center = [];
 df = P0.df;
 
 opts = optimoptions('linprog','Display','none');
