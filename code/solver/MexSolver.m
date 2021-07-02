@@ -24,6 +24,24 @@ classdef MexSolver < handle
             end
             o = s;
         end
+        
+        function func_name = solverName(simd_len)
+            if ismac()
+                [~,result] = system('sysctl -n machdep.cpu.brand_string');
+                if contains(result,'Apple')
+                    chip = 'arm';
+                else
+                    chip = 'x86';
+                end
+            else
+                chip = 'x86';
+            end
+            if strcmp(chip, 'arm')
+                func_name = ['PackedChol' num2str(simd_len) 'arm'];
+            else
+                func_name = ['PackedChol' num2str(simd_len)];
+            end
+        end
     end
 	
     methods
@@ -31,7 +49,7 @@ classdef MexSolver < handle
         function o = MexSolver(A, precision, k)
             o.A = A;
             o.k = k;
-            o.solver = str2func(['PackedChol' num2str(k)]);
+            o.solver = str2func(MexSolver.solverName(k));
             o.uid = o.solver('init', uint64(randi(2^32-1,'uint32')), A);
             o.solver('setAccuracyTarget', o.uid, precision);
 			o.precision = precision;

@@ -59,7 +59,7 @@ if polytope.n == 0
 end
 
 %% Set up workers if nWorkers ~= 1
-if opts.nWorkers ~= 1 && ~isempty(ver("parallel"))
+if opts.nWorkers ~= 1 && canUseParallelPool
     % create pool with size nWorkers
     p = gcp('nocreate');
     if isempty(p)

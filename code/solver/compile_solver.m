@@ -3,7 +3,7 @@ if nargin < 1, simd_len = 0; end
 if nargin < 2, recompile = false; end
 
 % check if the solver exists
-func_name = ['PackedChol' num2str(simd_len)];
+func_name = MexSolver.solverName(simd_len);
 if (~recompile && exist(func_name) == 3)
     try
         pchol = str2func(func_name);
