@@ -28,11 +28,11 @@ histogram(p, 20)
 [~, z] = kstest(norminv(p));
 assert(z > 0.05);
 
-%% understand the worse case
+%% understand the worst case
 if (0)
     opts = default_options();
     opts.module = {'MixingTimeEstimator', 'SampleStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
-    opts.seed = find(p == min(p)); %79%
+    opts.seed = find(p == min(p));
     opts.simdLen = 1;
     o = sample(P, 1000, opts);
     uniformtest(o, struct('toPlot', true));

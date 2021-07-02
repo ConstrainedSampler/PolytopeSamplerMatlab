@@ -13,7 +13,6 @@ classdef Hamiltonian < handle
         df
         ddf
         solver
-        accuracy
         opts
     end
     

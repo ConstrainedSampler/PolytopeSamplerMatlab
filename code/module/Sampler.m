@@ -186,11 +186,11 @@ classdef Sampler < dynamicprops
                 return;
             end
             
-            msg = sprintf('iter %i:', o.i);
+            msg = sprintf("iter %i:", o.i);
             if nargin >= 4
-                msg = [msg, sprintf(format, varargin{:})];
+                msg = msg + sprintf(format, varargin{:});
             else
-                msg = [msg, sprintf(format)];
+                msg = msg + sprintf(format);
             end
             
             if isa(o.opts.logging, 'function_handle')
