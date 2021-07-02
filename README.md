@@ -37,7 +37,7 @@ The polytope has dimension `d = 10` with constraint `sum_i x_i = 1` and `x >= 0`
 To generate 200 samples uniformly from the polytope `P`, we call the function `sample()`. 
 ```
 >> o = sample(P, 200);
-  Time spent |  Time reamin |                  Progress | Samples |  AccRate | StepSize |  MixTime
+  Time spent |  Time reamin |                  Progress | Samples |  AccProb | StepSize |  MixTime
 00d:00:00:01 | 00d:00:00:00 | ######################### | 211/200 | 0.989903 | 0.200000 |     11.2
 Done!
 ```
