@@ -61,7 +61,7 @@ classdef Polytope < handle
             %
             % Case 3: df is a function handle
             %   f need to be defined as a function handle.
-            %   df need to be the deriative of f
+            %   df need to be the derivative of f
             %   ddf is optional. Providing ddf improves the mixing time.
             if isa(P, 'Polytope')
                 o = P;

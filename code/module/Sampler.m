@@ -123,7 +123,7 @@ classdef Sampler < dynamicprops
             o.accept = (rand(o.opts.simdLen, 1) < o.prob);
             o.x = blendv(o.x, o.x_, o.accept);
             o.v = blendv(-o.v, o.v_, o.accept);
-
+            
             if (~all(o.accept))
                 o.log('sample:reject', 'rejected chain ' + join(string(num2str(find(~o.accept))),',') + '\n');
             end

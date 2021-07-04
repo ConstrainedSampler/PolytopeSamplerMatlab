@@ -78,12 +78,12 @@ title('Brownian bridge');
 initSampler
 
 load(fullfile('coverage','Recon1.mat'))
-P = struct;
+P = struct; % Warning: Other Cobra models may have optional constraints (C,d)
 P.lb = model.lb;
 P.ub = model.ub;
-P.b = model.b;
-P.A = model.S;
-o = sample(P, 500);
+P.beq = model.b;
+P.Aeq = model.S;
+o = sample(P, 100);
 uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
@@ -95,10 +95,10 @@ else
     P = struct;
     P.lb = model.lb;
     P.ub = model.ub;
-    P.b = model.b;
-    P.A = model.S;
+    P.beq = model.b;
+    P.Aeq = model.S;
     opts = default_options();
     opts.nWorkers = 0;  % 0 means the default number of workers in the Parallel Computing Toolbox
-    o = sample(P, 1000, opts);
+    o = sample(P, 200, opts);
     [pVal] = uniformtest(o, struct('toPlot', true));
 end
