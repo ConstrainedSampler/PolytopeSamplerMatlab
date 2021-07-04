@@ -85,8 +85,6 @@ end
 
 %% Set up workers if nWorkers ~= 1
 if opts.nWorkers ~= 1 && canUseParallelPool
-    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
-	
     % create pool with size nWorkers
     p = gcp('nocreate');
     if isempty(p)
@@ -100,6 +98,7 @@ if opts.nWorkers ~= 1 && canUseParallelPool
         p = parpool(opts.nWorkers);
     end
     opts.nWorkers = p.NumWorkers;
+    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
     
     spmd(opts.nWorkers)
         if opts.profiling
