@@ -1,4 +1,8 @@
 function P = standardize_problem(P)
+if nonempty(P, 'A')
+    error('Polytope:standardize', 'Use Aeq or Aineq instead of A in the model structure.');
+end
+    
 if nonempty(P, 'Aeq')
     n = size(P.Aeq, 2);
 elseif nonempty(P, 'Aineq')

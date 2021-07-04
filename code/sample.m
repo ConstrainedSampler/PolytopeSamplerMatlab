@@ -1,8 +1,34 @@
 function o = sample(problem, N, opts)
-%Input:
-% problem - a struct containing the constraints defining the polytope
+%Input: a structure P with the following fields
+%  .Aineq
+%  .bineq
+%  .Aeq
+%  .beq
+%  .lb
+%  .ub
+%  .f
+%  .df
+%  .ddf
+% describing a log-concave distribution given by
+%   exp(-sum f_i(x_i))
+%       over
+%   {Aineq x <= bineq, Aeq x = beq, lb <= x <= ub}
+% where f is given by a vector function of its 1-st, 2-nd, 3-rd
+% derivative.
 %
-% N - number of indepdent samples
+% Case 1: df is not defined
+%   f(x) = 0.
+% In this case, f, ddf must be empty.
+%
+% Case 2: df is a vector
+%   f_i(x_i) = df_i x_i.
+% In this case, f, ddf must be empty.
+%
+% Case 3: df is a function handle
+%   f need to be defined as a function handle.
+%   df need to be the derivative of f
+%   ddf is optional. Providing ddf improves the mixing time.
+% N - number of independent samples
 % opts - sampling options
 %
 %Output:
@@ -21,7 +47,6 @@ else
     opts = setfield(default_options(), opts);
 end
 opts.startTime = t;
-opts.N = N;
 
 compile_solver(0); compile_solver(opts.simdLen);
 
@@ -60,6 +85,8 @@ end
 
 %% Set up workers if nWorkers ~= 1
 if opts.nWorkers ~= 1 && canUseParallelPool
+    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
+	
     % create pool with size nWorkers
     p = gcp('nocreate');
     if isempty(p)
@@ -107,6 +134,8 @@ if opts.nWorkers ~= 1 && canUseParallelPool
         end
     end
 else
+    opts.N = N + opts.nRemoveInitialSamples * opts.simdLen;
+	
     if opts.profiling
         profile on
     end

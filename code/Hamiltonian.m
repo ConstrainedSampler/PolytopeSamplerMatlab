@@ -87,10 +87,10 @@ classdef Hamiltonian < handle
         end
         
         % Project to Ax = b
-        function x = project(o, x, step)
+        function x = project(o, x)
             o.move(x);
             % col vector: x = x + step * (o.A' * o.solver.approxSolve(o.b - o.A*x))./o.hess;
-            x = x + step * (o.solver.approxSolve(o.b' - x*o.A') * o.A)./o.hess;
+            x = x + (o.solver.approxSolve(o.b' - x*o.A') * o.A)./o.hess;
         end
         
         % Compute dK/dv = (g^-1 - g^-1 A'(A g^-1 A')^-1 A g^-1) v and

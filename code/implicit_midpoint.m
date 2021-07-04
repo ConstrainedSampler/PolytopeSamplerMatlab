@@ -1,8 +1,7 @@
-function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
+function [x4, v4, step] = implicit_midpoint(x0, v0, h, ham, opts)
     % Step 1
-    ham.prepare(x0);
+    x1 = x0;
     v1 = v0 - (h/2) * ham.DU(x0);
-    x1 = ham.project(x0, h);
     done = 0;
     
     % Step 2
@@ -12,11 +11,9 @@ function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
         x2_old = x2;
         xmid = (x1+x2)/2;
         vmid = (v1+v2)/2;
-        
         [dKdv, dKdx, nu] = ham.approxDK(xmid, vmid, nu);
         x2 = x1 + h * dKdv;
         v2 = v1 - h * dKdx;
-        
         dist = ham.x_norm(xmid, x2-x2_old)/ h;
         if (max(dist,[],'all') < opts.implicitTol)
             done = 1;
@@ -27,11 +24,16 @@ function [x3, v3, step] = implicit_midpoint(x0, v0, h, ham, opts)
     end
     
     if done == 0
-        x3 = NaN; v3 = NaN;
+        x4 = NaN; v4 = NaN;
         return
     end
     
     % Step 3
     x3 = x2;
     v3 = v2 - (h/2) * ham.DU(x3);
+    
+    % Step 4 (Project to Ax = b)
+    ham.prepare(x3);
+    v4 = v3;
+    x4 = ham.project(x3);
 end
