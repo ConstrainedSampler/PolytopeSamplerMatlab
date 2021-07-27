@@ -51,8 +51,8 @@ opts.startTime = t;
 compile_solver(0); compile_solver(opts.simdLen);
 
 %% Presolve
-p = rng(opts.seed, 'simdTwister');
-opts.seed = p.Seed;
+rng(opts.seed, 'simdTwister');
+opts.seed = rng().Seed;
 
 if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
     fid = fopen(opts.logging, 'a');
@@ -103,8 +103,9 @@ if opts.nWorkers ~= 1 && canUseParallelPool
     spmd(opts.nWorkers)
         if opts.profiling
             mpiprofile on
-        end
-        
+		end
+		
+        rng(opts.seed + labindex, 'simdTwister');
         s = Sampler(polytope, opts);
         while s.terminate == 0
             s.step();
