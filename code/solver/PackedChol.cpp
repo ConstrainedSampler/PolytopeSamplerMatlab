@@ -16,7 +16,7 @@ using Tx2 = FloatArray<double, chol_k>;
 
 int main()
 {
-    size_t simd_len = SIMD_LEN;
+	size_t simd_len = SIMD_LEN;
 	const char* cmd = env::inputString();
 	uint64_t uid = env::inputScalar<uint64_t>();
 	if (!strcmp(cmd, "init"))
@@ -119,4 +119,5 @@ int main()
 		else
 			throw "Invalid operation.";
 	}
+	mxFree((void*)cmd);
 }

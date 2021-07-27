@@ -18,6 +18,7 @@ else
 end
 
 if (recompile)
+	clear mex
     [path,~,~] = fileparts(mfilename('fullpath'));
     libpath = fullfile(path);
     qdpath = fullfile(path, 'qd');
