@@ -52,7 +52,8 @@ compile_solver(0); compile_solver(opts.simdLen);
 
 %% Presolve
 rng(opts.seed, 'simdTwister');
-opts.seed = rng().Seed;
+rng_cur = rng();
+opts.seed = rng_cur.Seed;
 
 if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
     fid = fopen(opts.logging, 'a');
