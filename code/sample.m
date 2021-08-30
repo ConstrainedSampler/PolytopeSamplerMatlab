@@ -1,5 +1,5 @@
 function o = sample(problem, N, opts)
-%Input: a structure P with the following fields
+%Input: a structure problem with the following fields
 %  .Aineq
 %  .bineq
 %  .Aeq
