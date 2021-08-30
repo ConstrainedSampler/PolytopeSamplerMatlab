@@ -34,7 +34,6 @@ function o = sample(problem, N, opts)
 %Output:
 % o - a structure containing the following properties:
 %   samples - a cell of dim x N vectors containing each chain of samples
-%   independent_samples - independent samples extracted (according to effective sample size)
 %   prepareTime - time to pre-process the input (including find interior
 %                 point, remove redundant constraints, reduce dimension etc.)
 %   sampleTime - total sampling time in seconds (sum over all workers)
