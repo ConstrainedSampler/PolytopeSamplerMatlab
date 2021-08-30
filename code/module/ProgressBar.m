@@ -21,7 +21,7 @@ classdef ProgressBar < handle
             
             if s.labindex == 1
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %', o.barLength, 's | %', o.nSamplesFieldLength, 's | %8s | %8s | %8s\n');
-                str = sprintf(fmt, 'Time spent', 'Time reamin', 'Progress', 'Est Samples', 'AccProb', 'StepSize', 'MixTime');
+                str = sprintf(fmt, 'Time spent', 'Time remain', 'Progress', 'Est Samples', 'AccProb', 'StepSize', 'MixTime');
                 disp(str);
                 
                 if (s.nWorkers > 1)
