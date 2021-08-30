@@ -76,23 +76,12 @@ title('Brownian bridge');
 %% Example 5: Read a polytope according to Cobra format
 initSampler
 
-load(fullfile('coverage','combinedSpeciesSubsetModel.mat'))
+load(fullfile('coverage','Recon1.mat'))
 P = struct; % Warning: Other Cobra models may have optional constraints (C,d)
-model = problem;
 P.lb = model.lb;
 P.ub = model.ub;
-%P.beq = model.b;
-%P.Aeq = model.S;
-if isfield(model,'dsense')
-            I = (model.dsense == 'E');
-            P.Aeq = [P.Aeq; model.C(I,:)];
-            P.beq = [P.beq; model.d(I)];
-            P.Aineq = model.C(~I,:);
-            P.bineq = model.d(~I,:);
-            flip = 1-2*(model.dsense(~I) == 'G');
-            P.Aineq = flip.*P.Aineq;
-            P.bineq = flip.*P.bineq;
-        end
+P.beq = model.b;
+P.Aeq = model.S;
 o = sample(P, 100);
 uniformtest(o, struct('toPlot', true));
 
