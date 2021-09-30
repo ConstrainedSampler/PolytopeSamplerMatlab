@@ -130,7 +130,7 @@ classdef Polytope < handle
             
             %% Give Warning for Unbounded Polytope
             o.width = o.estimate_width(o.center);
-            if (max(o.width) > 1e10)
+            if (max(o.width) > 1e9)
                 warning('Polytope:Unbounded', 'Domain seems to be unbounded. Either add a Gaussian term via f, df, ddf or add bounds to variable via lb and ub.');
             end
             
