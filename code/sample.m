@@ -9,16 +9,17 @@ function o = sample(problem, N, opts)
 %  .f
 %  .df
 %  .ddf
-% describing a log-concave distribution given by
+% describing a logconcave distribution given by
 %   exp(-sum f_i(x_i))
 %       over
 %   {Aineq x <= bineq, Aeq x = beq, lb <= x <= ub}
-% where f is given by a vector function of its 1-st, 2-nd, 3-rd
-% derivative.
+% where f is given by a vector function of its first (df) and second (ddf)
+% derivatives.
 %
 % Case 1: df is not defined
 %   f(x) = 0.
-% In this case, f, ddf must be empty.
+% In this case, f, ddf must be empty. This is the uniform distribution. In
+% this case the feasible region must be bounded.
 %
 % Case 2: df is a vector
 %   f_i(x_i) = df_i x_i.
@@ -27,15 +28,17 @@ function o = sample(problem, N, opts)
 % Case 3: df is a function handle
 %   f need to be defined as a function handle.
 %   df need to be the derivative of f
-%   ddf is optional. Providing ddf improves the mixing time.
-% N - number of independent samples
+%   ddf is optional. Providing ddf could improve the mixing time.
+%
+% N - number of independent samples 
+%
 % opts - sampling options
 %
 %Output:
 % o - a structure containing the following properties:
 %   samples - a cell of dim x N vectors containing each chain of samples
 %   prepareTime - time to pre-process the input (including find interior
-%                 point, remove redundant constraints, reduce dimension etc.)
+%                 point, remove redundant constraints, reduce dimension)
 %   sampleTime - total sampling time in seconds (sum over all workers)
 t = tic;
 

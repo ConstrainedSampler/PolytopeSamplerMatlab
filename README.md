@@ -1,6 +1,6 @@
 # PolytopeSampler
 
-PolytopeSampler is a `Matlab` implementation of constrained Hamiltonian Monte Carlo for sampling from high dimensional disributions on polytopes. It is able to sample efficiently from sets and distributions of more than 100K dimensions.
+PolytopeSampler is a `Matlab` implementation of constrained Riemannian Hamiltonian Monte Carlo for sampling from high dimensional disributions on polytopes. It is able to sample efficiently from sets and distributions with more than 100K dimensions.
 
 ## Quick Tutorial
 
@@ -33,7 +33,7 @@ The polytope is defined by
 >> P.beq = 1;
 >> P.lb = zeros(d, 1);
 ```
-The polytope has dimension `d = 10` with constraint `sum_i x_i = 1` and `x >= 0`. 
+The polytope has dimension `d = 10` with constraint `sum_i x_i = 1` and `x >= 0`. This is a simplex.
 To generate 200 samples uniformly from the polytope `P`, we call the function `sample()`. 
 ```
 >> o = sample(P, 200);
@@ -45,7 +45,7 @@ We can access the samples generated using
 ```
 >> o.samples
 ```
-We can print the the summary of the samples. 
+We can print a summary of the samples: 
 ```
 >> o.summary
 
@@ -67,6 +67,8 @@ ans =
     samples[9]      0.10627     0.09074    0.036962    0.084294    0.15125    211.64    0.99856
     samples[10]     0.10184    0.084699    0.035981    0.074923    0.14578    230.63     1.0277
 ```
-`n_ess` shows the effective sample size of the samples generated. `r_hat` tests the convergence of the sampling algorithm. A value of `r_hat` close to 1 indicates that the algorithm has converged properly. 
+`n_ess` shows the effective sample size of the samples generated. 
+`r_hat` tests the convergence of the sampling algorithm. 
+A value of `r_hat` close to 1 indicates that the algorithm has converged properly. 
 
 See `demo.m` for more examples, including examples of sampling from non-uniform distributions.  

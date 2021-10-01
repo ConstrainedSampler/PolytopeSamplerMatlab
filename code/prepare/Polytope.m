@@ -48,8 +48,8 @@ classdef Polytope < handle
             %   exp(-sum f_i(x_i))
             %       over
             %   {Aineq x <= bineq, Aeq x = beq, lb <= x <= ub}
-            % where f is given by a vector function of its 1-st, 2-nd, 3-rd
-            % derivative.
+            % where f is given by a vector function of its first and second 
+            % derivatives.
             %
             % Case 1: df is not defined
             %   f(x) = 0.
