@@ -7,7 +7,7 @@ default.folders = {'basic', 'metabolic', 'netlib'};
 default.ignoreProblems = {};
 default.generateDimensions = [10 100 1000 10000];
 
-o = setfield(default, options);
+o = Setfield(default, options);
 
 curFolder = fileparts(mfilename('fullpath'));
 

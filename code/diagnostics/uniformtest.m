@@ -28,7 +28,7 @@ assert(~o.opts.rawOutput, 'This function does not support raw output');
 defaults.toPlot = false;
 defaults.thinningFactor = 5;
 defaults.tol = 1e-8;
-opts = setfield(defaults, opts);
+opts = Setfield(defaults, opts);
 
 % Since adtest and kstest are for independent samples,
 % we further sample the samples to make sure they are independent enough.
