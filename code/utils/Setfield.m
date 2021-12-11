@@ -1,5 +1,5 @@
 % obj holds the default value
-function obj = setfield(obj, source)
+function obj = Setfield(obj, source)
     key = fieldnames(obj);
     for i = 1:length(key)
         if isfield(source, key{i}) || isprop(source, key{i})

@@ -43,10 +43,10 @@ function opts = default_options()
     
     opts.MemoryStorage = struct;
     opts.MemoryStorage.recordsPerIndependentSample = 5;
-    opts.MemoryStorage.minNumRecords = 1000;
+    opts.MemoryStorage.minNumRecords = 100;
     
     % Presolve Options
-	opts.presolve = struct;
+    opts.presolve = struct;
     opts.presolve.runSimplify = true;
     opts.presolve.ipmMaxIter = 100;
     opts.presolve.ipmDualTol = 1e-12;

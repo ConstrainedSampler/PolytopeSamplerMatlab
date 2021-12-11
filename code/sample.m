@@ -1,5 +1,5 @@
 function o = sample(problem, N, opts)
-%Input: a structure P with the following fields
+%Input: a structure problem with the following fields
 %  .Aineq
 %  .bineq
 %  .Aeq
@@ -9,16 +9,17 @@ function o = sample(problem, N, opts)
 %  .f
 %  .df
 %  .ddf
-% describing a log-concave distribution given by
+% describing a logconcave distribution given by
 %   exp(-sum f_i(x_i))
 %       over
 %   {Aineq x <= bineq, Aeq x = beq, lb <= x <= ub}
-% where f is given by a vector function of its 1-st, 2-nd, 3-rd
-% derivative.
+% where f is given by a vector function of its first (df) and second (ddf)
+% derivatives.
 %
 % Case 1: df is not defined
 %   f(x) = 0.
-% In this case, f, ddf must be empty.
+% In this case, f, ddf must be empty. This is the uniform distribution. In
+% this case the feasible region must be bounded.
 %
 % Case 2: df is a vector
 %   f_i(x_i) = df_i x_i.
@@ -27,16 +28,17 @@ function o = sample(problem, N, opts)
 % Case 3: df is a function handle
 %   f need to be defined as a function handle.
 %   df need to be the derivative of f
-%   ddf is optional. Providing ddf improves the mixing time.
-% N - number of independent samples
+%   ddf is optional. Providing ddf could improve the mixing time.
+%
+% N - number of independent samples 
+%
 % opts - sampling options
 %
 %Output:
 % o - a structure containing the following properties:
 %   samples - a cell of dim x N vectors containing each chain of samples
-%   independent_samples - independent samples extracted (according to effective sample size)
 %   prepareTime - time to pre-process the input (including find interior
-%                 point, remove redundant constraints, reduce dimension etc.)
+%                 point, remove redundant constraints, reduce dimension)
 %   sampleTime - total sampling time in seconds (sum over all workers)
 t = tic;
 
@@ -44,7 +46,7 @@ t = tic;
 if (nargin <= 2)
     opts = default_options();
 else
-    opts = setfield(default_options(), opts);
+    opts = Setfield(default_options(), opts);
 end
 opts.startTime = t;
 
@@ -85,9 +87,7 @@ if polytope.n == 0
 end
 
 %% Set up workers if nWorkers ~= 1
-if opts.nWorkers ~= 1 && canUseParallelPool
-    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
-	
+if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
     % create pool with size nWorkers
     p = gcp('nocreate');
     if isempty(p)
@@ -101,6 +101,7 @@ if opts.nWorkers ~= 1 && canUseParallelPool
         p = parpool(opts.nWorkers);
     end
     opts.nWorkers = p.NumWorkers;
+    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
     
     spmd(opts.nWorkers)
         if opts.profiling

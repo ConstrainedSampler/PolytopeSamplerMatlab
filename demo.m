@@ -87,7 +87,7 @@ uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
 initSampler
-if ~canUseParallelPool
+if isempty(ver('parallel'))
     fprintf('Parallel Computing Toolbox is required for this example')
 else
     load(fullfile('coverage','Recon1.mat'))
