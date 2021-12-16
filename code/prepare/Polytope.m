@@ -7,6 +7,7 @@ classdef Polytope < handle
         y       % shift of the domain
         barrier % TwoSidedBarrier
         f       % the objective function and its derivatives in the original space
+        w      % Lewis weight
         df
         ddf
         original
@@ -139,9 +140,11 @@ classdef Polytope < handle
                 o.center = o.T\(P.center - o.y);
             else
                 %% Recenter again and make sure it is feasible
-                [o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
+                [o.center, ~, ~, o.w] = lewis_center(o.A, o.b, o, o.opts, o.center);
+                [~, hess] = o.lewis_center_oracle(o.center, o.w);
+                %[o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
+                %[~, hess] = o.analytic_center_oracle(o.center);
                 solver = Solver(o.A, 'doubledouble');
-                [~, hess] = o.analytic_center_oracle(o.center);
                 solver.setScale(1./hess);
                 o.center = o.center + (o.A' * solver.solve(o.b - o.A*o.center))./hess;
 
@@ -189,6 +192,12 @@ classdef Polytope < handle
             [~, g, h] = o.f_oracle(x);
             g = g + o.barrier.gradient(x);
             h = h + o.barrier.hessian(x);
+        end
+        
+        function [g, h] = lewis_center_oracle(o, x, w)
+            [~, g, h] = o.f_oracle(x);
+            g = g + w .* o.barrier.gradient(x);
+            h = h + w .* o.barrier.hessian(x);
         end
         
         function [f, g, h] = f_oracle(o, x)

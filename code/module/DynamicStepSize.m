@@ -29,9 +29,12 @@ classdef DynamicStepSize < handle
         
         function o = step(o, s)
             % Warmup phase
+            bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
+            o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;
             warmupRatio = mean(s.nEffectiveStep) / o.opts.warmUpStep;
-            if warmupRatio < 1 && ~o.warmupFinished
-                s.stepSize = s.opts.initalStepSize * min(warmupRatio+1e-3, 1);
+            
+            if warmupRatio < 1 && ~o.warmupFinished && max(o.consecutiveBadStep) < o.opts.maxConsecutiveBadStep
+                s.stepSize = s.opts.initalStepSize * min(warmupRatio+1e-2, 1);
                 s.momentum = 1 - min(1, s.stepSize / s.opts.effectiveStepSize);
                 return;
             end
@@ -44,8 +47,6 @@ classdef DynamicStepSize < handle
                 o.warmupFinished = true;
             end
             
-            bad_step = s.prob < 0.5 | s.ODEStep == s.opts.maxODEStep;
-            o.consecutiveBadStep = bad_step .* o.consecutiveBadStep + bad_step;
             o.iterSinceShrink = o.iterSinceShrink + 1;
             o.rejectSinceShrink = o.rejectSinceShrink + 1-s.prob;
             o.ODEStepSinceShrink = o.ODEStepSinceShrink + s.ODEStep;

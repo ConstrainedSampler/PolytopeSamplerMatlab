@@ -1,4 +1,4 @@
-classdef TwoSidedBarrier < handle
+classdef WeightedTwoSidedBarrier < handle
     % The log barrier for the domain {lu <= x <= ub}:
     % 	phi(x) = - sum log(x - lb) - sum log(ub - x).
     properties (SetAccess = private)
@@ -14,15 +14,17 @@ classdef TwoSidedBarrier < handle
     
     properties
         extraHessian = 0 % Extra factor added when computing Hessian. Used to handle free constraints.
+        w
     end
     
     methods
-        function o = TwoSidedBarrier(lb, ub, vdim)
+        function o = WeightedTwoSidedBarrier(lb, ub, w, vdim)
             % o.update(lb, ub)
             % Update the bounds lb and ub.
             
             if nargin < 3, vdim = 1; end
             o.set_bound(lb, ub);
+            o.w = reshape(w, size(lb));
             o.vdim = vdim;
         end
         
@@ -117,21 +119,21 @@ classdef TwoSidedBarrier < handle
             % g = o.gradient(x)
             % Output gradient phi(x).
             
-            grad = 1./(o.ub-x) - 1./(x-o.lb);
+            grad = o.w./(o.ub-x) - o.w./(x-o.lb);
         end
         
         function d = hessian(o, x)
             % g = o.hessian(x)
             % Output Hessian phi(x).
             
-            d = 1./((x-o.lb).*(x-o.lb)) + 1./((o.ub-x).*(o.ub-x)) + o.extraHessian;
+            d = o.w./((x-o.lb).*(x-o.lb)) + o.w./((o.ub-x).*(o.ub-x)) + o.extraHessian;
         end
         
         function t = tensor(o, x)
             % g = o.tensor(x)
             % Output the third derivative of phi(x).
             
-            t = -2*(1./((x-o.lb).*(x-o.lb).*(x-o.lb)) - 1./((o.ub-x).*(o.ub-x).*(o.ub-x)));
+            t = -2*(o.w./((x-o.lb).*(x-o.lb).*(x-o.lb)) - o.w./((o.ub-x).*(o.ub-x).*(o.ub-x)));
         end
         
         function v = quadratic_form_gradient(o, x, u)

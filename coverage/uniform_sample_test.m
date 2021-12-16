@@ -28,7 +28,7 @@ function o = test_func(name, num_samples, debug)
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DynamicWeight', 'DebugLogger'};
 if debug
     P_opts.module{end+1} = 'ProgressBar';
 end

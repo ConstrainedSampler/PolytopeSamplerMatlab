@@ -106,7 +106,7 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
     spmd(opts.nWorkers)
         if opts.profiling
             mpiprofile on
-		end
+		  end
 		
         rng(opts.seed + labindex, 'simdTwister');
         s = Sampler(polytope, opts);
@@ -158,20 +158,7 @@ o.problem = polytope;
 o.opts = opts;
 
 if ~opts.rawOutput
-    o.ess = effective_sample_size(o.chains);
-    
-    y = [];
-    for i = 1:numel(o.ess)
-        chain_i = o.chains{i};
-        ess_i = o.ess{i};
-        N_i = size(chain_i,2);
-        gap = ceil(N_i/ min(o.ess{i}, [], 'all'));
-        for j = 1:size(ess_i,2)
-            y_ij = chain_i(:, ceil(opts.nRemoveInitialSamples*gap:gap:N_i));
-            y = [y y_ij];
-        end
-    end
-    o.samples = y;
+    o.samples = o.chains;
     o.summary = summary(o);
 end
 

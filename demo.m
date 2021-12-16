@@ -83,7 +83,6 @@ P.ub = model.ub;
 P.beq = model.b;
 P.Aeq = model.S;
 o = sample(P, 100);
-uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
 initSampler
@@ -99,5 +98,4 @@ else
     opts = default_options();
     opts.nWorkers = 0;  % 0 means the default number of workers in the Parallel Computing Toolbox
     o = sample(P, 200, opts);
-    [pVal] = uniformtest(o, struct('toPlot', true));
 end
