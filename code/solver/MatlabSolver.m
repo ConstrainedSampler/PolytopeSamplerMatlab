@@ -40,9 +40,14 @@ classdef MatlabSolver < handle
         end
         
         function err = estimateAccuracy(o)
-            JLdir = sign(rand(size(o.A,1), 2)-0.5);
+            k = 4;
+            JLdir = (rand(size(o.A,1), 2 * k)-0.5)*sqrt(12);
             V = (o.A' * (o.L'\JLdir)) .* sqrt(o.w);
-            err = abs(sum(V(:,1).*V(:,2)) - sum(JLdir(:,1).*JLdir(:,2)));
+            err = 0;
+            for i = 1:k
+                err = err + (sum(V(:,2*i-1).*V(:,2*i)) - sum(JLdir(:,2*i-1).*JLdir(:,2*i)))^2;
+            end
+            err = sqrt(err / k);
         end
         
         function setScale(o, w)

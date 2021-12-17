@@ -326,6 +326,6 @@ struct PackedChol
 	{
 		pcs_assert(decomposed, "estimateAccuracy: Need to call decompose first.");
 		
-		return cholAccuracy(diagPJL, L, A, At, w.get(), 2);
+		return cholAccuracy(diagPJL, L, A, At, w.get());
 	}
 };

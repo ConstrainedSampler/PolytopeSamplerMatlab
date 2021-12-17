@@ -18,7 +18,7 @@ classdef ProgressBar < handle
 			
             if (s.N ~= Inf)
                 o.nSamplesTextLength = max(length(num2str(s.N)), 5);
-                o.nSamplesFieldLength = 2 * o.nSamplesTextLength + 1;
+                o.nSamplesFieldLength = 2 * o.nSamplesTextLength + 3;
             end
             
             if s.labindex == 1
@@ -73,7 +73,7 @@ classdef ProgressBar < handle
                 fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesFieldLength, 'i | %8.6f | %8.6f | %8.1f');
                 str2 = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, prob, s.stepSize, avgMixingTime);
             else
-                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesTextLength, 'i /%', o.nSamplesTextLength, 'i | %8.6f | %8.6f | %8.1f');
+                fmt = sprintf('%s%i%s%i%s', '%12s | %12s | %s | %', o.nSamplesTextLength, 'i / %', o.nSamplesTextLength, 'i | %8.6f | %8.6f | %8.1f');
                 str2 = sprintf(fmt, durationString(timeSpent), durationString(timeRemain), progressString(progress, o.barLength), nSamples, s.N, prob, s.stepSize, avgMixingTime);
             end
             

@@ -139,35 +139,9 @@ classdef Polytope < handle
          if ~isempty(P.center)
             o.center = o.T\(P.center - o.y);
          else
-%             [o.center, ~, ~, o.w] = lewis_center(o.A, o.b, o, o.opts, o.center);
-%             [~, hess] = o.lewis_center_oracle(o.center, o.w);
-%             
-%             solver = Solver(o.A, 'double');
-%             solver.setScale(1./hess);
-%             solver.accuracy
-%             
-%             
-%             solver = Solver(o.A, 'doubledouble');
-%             solver.setScale(1./hess);
-%             dL = solver.diagL();
-%             error('123');
-%             
-%             return;
-%             
-%             [o.center, ~, ~, o.w] = lewis_center(o.A, o.b, o, o.opts, o.center);
-%             [~, hess] = o.lewis_center_oracle(o.center, o.w);
-%             
-%             solver = Solver(o.A, 'double');
-%             solver.setScale(1./hess);
-%             solver.accuracy
-%             error('123');
-            
-            %return;
             %% Recenter again and make sure it is feasible
             [o.center, ~, ~, o.w] = lewis_center(o.A, o.b, o, o.opts, o.center);
             [~, hess] = o.lewis_center_oracle(o.center, o.w);
-            %[o.center, ~, ~] = analytic_center(o.A, o.b, o, o.opts, o.center);
-            %[~, hess] = o.analytic_center_oracle(o.center);
             solver = Solver(o.A, 'doubledouble');
             solver.setScale(1./hess);
             o.center = o.center + (o.A' * solver.solve(o.b - o.A*o.center))./hess;
@@ -198,12 +172,13 @@ classdef Polytope < handle
          o.rescale();
          o.split_dense_cols(o.opts.splitDenseCols);
          o.reorder();
+         o.remove_dependent_rows();
          changed = true;
          while changed
             while changed
                changed = false;
-               changed = changed || o.remove_dependent_rows();
                changed = changed || o.remove_fixed_variables();
+               changed = changed || o.remove_dependent_rows();
                o.reorder();
             end
             
