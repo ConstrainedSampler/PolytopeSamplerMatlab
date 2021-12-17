@@ -27,6 +27,7 @@ end
 function o = test_func(name)
 o = {};
 P = loadProblem(name);
+rng(123456); % make sure it is reproducible
 
 %% Test 1: Check if the solution remains the same.
 
@@ -77,7 +78,7 @@ o.minDist = min(o.minDist);
 o.m = size(P0.A,1); o.n = size(P0.A,2); o.nnz = nnz(P0.A);
 o.mNew = size(P1.A,1); o.nNew = size(P1.A,2); o.nnzNew = nnz(P1.A);
 
-if (o.error <= 1e-4 && o.feasible && o.minDist > 1e-5) % = is important for NaN case
+if (o.error <= 1e-4 && o.feasible && o.minDist > 1e-6) % = is important for NaN case
     o.success = 1;
 else
     o.success = 0;

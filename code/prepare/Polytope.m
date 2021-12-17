@@ -121,7 +121,6 @@ classdef Polytope < handle
                     o.opts.logFunc('Polytope:simplify', ['Run interior point methods to find the analytic center:' newline]);
                     o.center = analytic_center(o.A, o.b, o, o.opts, o.center);
                 end
-                o.rescale(o.center);
                 o.shift_barrier(o.center);
                 o.reorder();
             else

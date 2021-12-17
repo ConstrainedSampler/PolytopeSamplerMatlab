@@ -17,7 +17,7 @@ classdef MexSolver < handle
     methods (Static)
         function o = loadobj(s)
             s.uid = s.solver('init', uint64(randi(2^32-1,'uint32')), s.A);
-			s.solver('setAccuracyTarget', s.uid, s.precision);
+            s.solver('setAccuracyTarget', s.uid, s.precision);
             if ~any(isnan(s.w))
         		w = s.w; s.w = NaN;
             	s.setScale(w);
