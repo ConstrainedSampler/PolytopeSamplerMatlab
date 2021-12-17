@@ -78,7 +78,7 @@ for iter = 1:opts.ipmMaxIter
     lambda = lambda - dr2;
     
     % update weight
-    wNew = max(double(solver.leverageScoreComplement(16)), 0) + 1e-8;%1 / length(w);
+    wNew = max(double(solver.leverageScoreComplement(0)), 0) + 1e-8;%1 / length(w);
     w = (w + wNew)/2;
     wp = w.^(1-1/8);
     
