@@ -96,10 +96,36 @@ namespace PackedCSparse {
 		return o;
 	}
 
+   // this code is problematic because cancalation can happens when diagonal is 1e128
+// 	template<typename Tx, typename Ti, typename Tx2>
+// 	Tx cholAccuracy(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, const Tx* w, size_t k = 1)
+// 	{
+// 		projectionJL<true>(o, L, A, At, k);
+// 
+// 		Ti m = A.m, n = A.n;
+// 		Tx* x = o.x.get();
+// 
+// 		Tx ret1 = Tx(0.0);
+// 		for (Ti i = 0; i < n; i++)
+// 			ret1 += x[i] * w[i];
+// 
+// 		Tx ret2 = Tx(0.0);
+// 		for (Ti i = 0; i < m; i++)
+// 		{
+// 			Tx* d = o.d.get() + i * (2 * k);
+// 			for (Ti j = 0; j < k; j++)
+// 				ret2 += d[j] * d[j + k];
+// 
+// 		}
+// 
+// 		Tx dist = (ret1 - ret2) / Tx(sqrt(double(k)));
+// 		return abs(dist);
+// 	}
+   
 	template<typename Tx, typename Ti, typename Tx2>
 	Tx cholAccuracy(LeverageJLOutput<Tx, Ti>& o, const SparseMatrix<Tx, Ti>& L, const SparseMatrix<Tx2, Ti>& A, const SparseMatrix<Tx2, Ti>& At, const Tx* w, size_t k = 1)
 	{
-		projectionJL<true>(o, L, A, At, k);
+		projectionJL<false>(o, L, A, At, k);
 
 		Ti m = A.m, n = A.n;
 		Tx* x = o.x.get();
@@ -108,14 +134,7 @@ namespace PackedCSparse {
 		for (Ti i = 0; i < n; i++)
 			ret1 += x[i] * w[i];
 
-		Tx ret2 = Tx(0.0);
-		for (Ti i = 0; i < m; i++)
-		{
-			Tx* d = o.d.get() + i * (2 * k);
-			for (Ti j = 0; j < k; j++)
-				ret2 += d[j] * d[j + k];
-
-		}
+		Tx ret2 = Tx(k)*Tx(m);
 
 		Tx dist = (ret1 - ret2) / Tx(sqrt(double(k)));
 		return abs(dist);
