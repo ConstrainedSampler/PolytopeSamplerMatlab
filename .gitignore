@@ -7,5 +7,5 @@
 .DS_Store
 paper/
 CHRR/
-coverage/problems/extra/
+coverage/problems/*extra/
 .MATLABDriveTag
