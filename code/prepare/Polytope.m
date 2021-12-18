@@ -175,8 +175,8 @@ classdef Polytope < handle
          while changed
             while changed
                changed = false;
-               changed = changed || o.remove_dependent_rows();
-               changed = changed || o.remove_fixed_variables(); %remove_fixed_variables can only be called after remove_dependent_rows
+               changed = changed | o.remove_dependent_rows();
+               changed = changed | o.remove_fixed_variables(); %remove_fixed_variables can only be called after remove_dependent_rows
                o.reorder();
             end
             changed = o.extract_collapsed_variables();
