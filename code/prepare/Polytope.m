@@ -171,16 +171,14 @@ classdef Polytope < handle
          o.rescale();
          o.split_dense_cols(o.opts.splitDenseCols);
          o.reorder();
-         o.remove_dependent_rows();
          changed = true;
          while changed
             while changed
                changed = false;
-               changed = changed || o.remove_fixed_variables();
                changed = changed || o.remove_dependent_rows();
+               changed = changed || o.remove_fixed_variables(); %remove_fixed_variables can only be called after remove_dependent_rows
                o.reorder();
             end
-            
             changed = o.extract_collapsed_variables();
          end
          o.opts.logFunc('Polytope:simplify', sprintf('Finish simplifying the problem.\nNow, there are %i variables and %i constraints.\n', o.n, size(o.A,1)));
