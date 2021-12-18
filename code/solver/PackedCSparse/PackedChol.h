@@ -128,7 +128,7 @@ struct PackedChol
 				{
 					Ti nz = L_exact.nnz();
 					for (Ti s = 0; s < nz; ++s)
-						Le[i].x[s] = double(L_exact.x[s]);
+						Le[i].x[s] = (L_exact.x[s]);
 				}
 			}
 

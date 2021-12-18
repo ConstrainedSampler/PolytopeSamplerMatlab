@@ -65,11 +65,11 @@ classdef MexSolver < handle
          o.solver('setAccuracyTarget', o.uid, precision);
          o.precision = precision;
          
-         if size(A, 2) == 0 || precision == 0.0 % the C program, first call of double double is to initialize
+         if size(A, 2) == 0
             if o.k == 0
-               o.w = ones(size(A, 2), 1);
+               o.w = zeros(0, 1);
             else
-               o.w = ones(o.k, size(A, 2));
+               o.w = zeros(o.k, 0);
             end
             o.accuracy = o.solver('decompose', o.uid, o.w);
          end
