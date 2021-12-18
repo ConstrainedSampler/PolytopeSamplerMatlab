@@ -31,6 +31,12 @@ if (recompile)
    
    compiler = mex.getCompilerConfigurations('C++','Selected').ShortName;
    mex_string = ['mex -R2018a -silent -DSIMD_LEN=' num2str(simd_len) ' -O -I"%libpath" '];
+   
+   if (contains(func_name, 'arm'))
+       archflag = '';
+       nameflag = '';
+       mex_string2 = ['CFLAGS="$CFLAGS ' archflag '"'];
+   else
    if (contains(compiler, 'MSVCPP'))
       switch arch
          case 'native'
@@ -79,6 +85,7 @@ if (recompile)
       mex_string2 = ['CFLAGS="$CFLAGS ' archflag '"'];
    else
       error('Currently, we only support MSVCPP, Clang++ or g++ as the compiler.');
+   end
    end
    outputfile = [outputfile nameflag];
    mex_string = [mex_string mex_string2];
