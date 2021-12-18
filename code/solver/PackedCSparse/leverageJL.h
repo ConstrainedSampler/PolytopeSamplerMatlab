@@ -135,6 +135,5 @@ namespace PackedCSparse {
 			est += result[j] * result[j];
 		
 		return clipped_sqrt(est/Tx(double(k)), 0.0);
-		//return est + 100;
 	}
 }

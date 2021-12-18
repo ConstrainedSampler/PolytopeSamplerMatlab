@@ -72,6 +72,7 @@ o = sample(P, 100);
 figure;
 plot(o.samples(1:d, end))
 title('Brownian bridge');
+drawnow()
 
 %% Example 5: Read a polytope according to Cobra format
 initSampler
