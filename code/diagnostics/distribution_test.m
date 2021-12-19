@@ -1,5 +1,5 @@
-function [pVal] = nonuniformtest(o, opts)
-%p_value = nonuniformtest(o, opts)
+function [pVal] = distribution_test(o, opts)
+%p_value = distribution_test(o, opts)
 %Compute the p-value for the radial distribution of o.samples
 %
 %Input:
@@ -48,34 +48,61 @@ x = x(:,2:end);
 
 P = o.problem.original;
 if isempty(P.df)
-   P.f = @(x) 0;
-elseif isfloat(P.df)
-   P.f = @(x) P.df' * x;
+   P.df = zeros(size(x,1),1);
+end
+vectorMode = isfloat(P.df);
+
+if (~vectorMode)
+   pt = P.f(p) + 1;
+   dim = dim + numel(pt);
 end
 
 N = size(x,2);
 unif_vals = zeros(N,1);
+
+pLbS = P.lb - p;
+pUbS = P.ub - p;
+pIneqS = P.bineq - P.Aineq * p;
 for i = 1:N
    x_i = x(:,i);
    u = x_i - p;
    
-   % compute r = 1 / ||x_i||_K
+   % compute r be largest scalar st p + r u is feasible
    
    % check the constraint x <= P.ub
    posIdx = u > opts.tol;
-   r1 = min((P.ub(posIdx) - x_i(posIdx))./(u(posIdx)));
+   r1 = min(pUbS(posIdx)./u(posIdx));
    
    % check the constraint x >= P.lb
    negIdx = u < -opts.tol;
-   r2 = min((P.lb(negIdx) - x_i(negIdx))./(u(negIdx)));
+   r2 = min(pLbS(negIdx)./(u(negIdx)));
    
-   % check the constraint P.Aineq <= P.bineq
-   Ax = P.Aineq * x_i; Au = P.Aineq * u;
+   % check the constraint P.Aineq * x <= P.bineq
+   Au = P.Aineq * u;
    posAIdx = (Au > opts.tol);
-   r3 = min((P.bineq(posAIdx) - Ax(posAIdx))./(Au(posAIdx)));
+   r3 = min(pIneqS(posAIdx)./(Au(posAIdx)));
    
    r = min([r1, r2, r3]);
-   unif_vals(i) = (1 / (1+r))^dim;
+   if (vectorMode)
+      a = u' * P.df;
+   else
+      xt = P.f(x_i);
+      xt = xt + exprnd(1,size(xt,1),size(xt,2));
+      ut = xt - pt;
+      g = @(t) P.f(p + t * u) - (pt + t * ut);
+      r4 = binary_search(g, 1, r, 1e-12);
+      r = min(r, r4);
+      
+      a = sum(ut);
+   end
+   
+   if (a * r > dim)
+      v = gammainc(a, dim) / gammainc(a * r, dim);
+   else
+      v = gammainc(a, dim, 'scaledlower') / gammainc(a * r, dim, 'scaledlower');
+      v = v * exp(a * (r-1)) / r^dim;
+   end
+   unif_vals(i) = v;
 end
 
 % To ensure pval1 and pval2 are independent,
@@ -102,4 +129,24 @@ if opts.toPlot
    hold on;
    plot(0:0.01:1, 0:0.01:1, '.')
    title(sprintf('Empirical CDF of the radial distribution (pval = %.4f)', pVal))
+end
+end
+
+% find maximum t such that g(x) <= 0
+% assume g(a) <= 0
+function t = binary_search(g, a, b, tol)
+   assert(all(g(a) <= 0) && b >= a);
+   if all(g(b)<=0)
+      t = b;
+   else
+      while (b > a + tol)
+         m = (b+a)/2;
+         if all(g(m)<=0)
+            a = m;
+         else
+            b = m;
+         end
+      end
+      t = (a+b)/2;
+   end
 end

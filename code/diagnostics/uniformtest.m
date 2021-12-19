@@ -56,26 +56,26 @@ end
 N = size(x,2);
 unif_vals = zeros(N,1);
 for i = 1:N
-    x_i = x(:,i);
-    u = x_i - p;
-    
-    % compute r = 1 / ||x_i||_K
-    
-    % check the constraint x <= P.ub
-    posIdx = u > opts.tol;
-    r1 = min((P.ub(posIdx) - x_i(posIdx))./(u(posIdx)));
-    
-    % check the constraint x >= P.lb
-    negIdx = u < -opts.tol;
-    r2 = min((P.lb(negIdx) - x_i(negIdx))./(u(negIdx)));
-    
-    % check the constraint P.Aineq <= P.bineq
-    Ax = P.Aineq * x_i; Au = P.Aineq * u;
-    posAIdx = (Au > opts.tol);
-    r3 = min((P.bineq(posAIdx) - Ax(posAIdx))./(Au(posAIdx)));
-    
-    r = min([r1, r2, r3]);
-    unif_vals(i) = (1 / (1+r))^dim;
+   x_i = x(:,i);
+   u = x_i - p;
+   
+   % compute r be largest scalar st x + r u is feasible
+   
+   % check the constraint x <= P.ub
+   posIdx = u > opts.tol;
+   r1 = min((P.ub(posIdx) - x_i(posIdx))./(u(posIdx)));
+   
+   % check the constraint x >= P.lb
+   negIdx = u < -opts.tol;
+   r2 = min((P.lb(negIdx) - x_i(negIdx))./(u(negIdx)));
+   
+   % check the constraint P.Aineq <= P.bineq
+   Ax = P.Aineq * x_i; Au = P.Aineq * u;
+   posAIdx = (Au > opts.tol);
+   r3 = min((P.bineq(posAIdx) - Ax(posAIdx))./(Au(posAIdx)));
+   
+   r = min([r1, r2, r3]);
+   unif_vals(i) = (1 / (1+r))^dim;
 end
 
 % To ensure pval1 and pval2 are independent,
