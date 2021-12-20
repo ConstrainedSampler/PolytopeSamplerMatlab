@@ -20,7 +20,6 @@ parfor i = 1:N
     opts.seed = i;
     o = sample(P, 1000, opts);
     p(i) = uniformtest(o);
-	 fprintf('%i: %f\n', i, p(i))
 end
 
 % Look by eye to see if this is uniform
