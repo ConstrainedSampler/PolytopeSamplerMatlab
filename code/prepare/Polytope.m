@@ -94,6 +94,8 @@ classdef Polytope < handle
          if (~o.fHandle || ~o.dfHandle || ~o.ddfHandle)
             normf = norm(o.f) + norm(o.df) + norm(o.ddf);
             o.fZero = (normf == 0);
+         else
+            o.fZero = false;
          end
          
          %% Move all variables with lb == ub to Ax = b
@@ -105,7 +107,7 @@ classdef Polytope < handle
             ub(fixedVars) = +Inf;
             lb(fixedVars) = -Inf;
          end
-         o.barrier = TwoSidedBarrier(lb, ub);
+         o.barrier = TwoSidedBarrier(max(lb,-1e7), min(ub,1e7));
          o.barrier.extraHessian = opts.extraHessian;
          
          %% Update the transformation Tx + y
@@ -116,6 +118,11 @@ classdef Polytope < handle
          
          %% Simplify the polytope
          if o.opts.runSimplify
+            if (~o.fZero)
+               o.fZero = false;
+               o.simplify();
+               o.fZero = true;
+            end
             o.simplify();
             
             if isempty(o.center)
@@ -444,7 +451,7 @@ classdef Polytope < handle
          assert(max(full(sum(o.T~=0,2))) <= 1);
          
          o.n = size(o.T,2);
-         o.Tidx = int32((o.T~=0) * (1:o.n)');
+         o.Tidx = int32(full((o.T~=0) * (1:o.n)'));
          o.Tidx(o.Tidx==0) = 1;
          o.Ta = o.T * ones(o.n,1);
          

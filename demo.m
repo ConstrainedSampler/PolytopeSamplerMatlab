@@ -9,7 +9,7 @@ o = sample(P, 2000); % Number of samples = 2000
 s = o.samples;
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
-uniformtest(o, struct('toPlot', true));
+distribution_test(o, struct('toPlot', true));
 drawnow()
 
 %% Example 2: Sample uniform from Birkhoff polytope

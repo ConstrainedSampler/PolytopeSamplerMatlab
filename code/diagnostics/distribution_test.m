@@ -102,7 +102,7 @@ for i = 1:N
       v = gammainc(a, dim, 'scaledlower') / gammainc(a * r, dim, 'scaledlower');
       v = v * exp(a * (r-1)) / r^dim;
    end
-   unif_vals(i) = v;
+   unif_vals(i) = real(v);
 end
 
 % To ensure pval1 and pval2 are independent,
