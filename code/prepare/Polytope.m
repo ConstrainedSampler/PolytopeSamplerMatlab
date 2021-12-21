@@ -93,6 +93,8 @@ classdef Polytope < handle
             if (~o.fHandle || ~o.dfHandle || ~o.ddfHandle)
                 normf = norm(o.f) + norm(o.df) + norm(o.ddf);
                 o.fZero = (normf == 0);
+            else
+                o.fZero = false;
             end
             
             %% Move all variables with lb == ub to Ax = b
