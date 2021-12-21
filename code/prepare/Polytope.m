@@ -104,7 +104,7 @@ classdef Polytope < handle
                 ub(fixedVars) = +Inf;
                 lb(fixedVars) = -Inf;
             end
-            o.barrier = TwoSidedBarrier(lb, ub);
+            o.barrier = TwoSidedBarrier(max(lb,-1e7), min(ub,1e7));
             o.barrier.extraHessian = opts.extraHessian;
             
             %% Update the transformation Tx + y
@@ -115,6 +115,11 @@ classdef Polytope < handle
             
             %% Simplify the polytope
             if o.opts.runSimplify
+                if (~o.fZero)
+                    o.fZero = false;
+                    o.simplify();
+                    o.fZero = true;
+                end
                 o.simplify();
                 
                 if isempty(o.center)
