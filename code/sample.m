@@ -91,12 +91,12 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
     % create pool with size nWorkers
     p = gcp('nocreate');
     if isempty(p)
-        if opts.nWorkers ~= 0
+        if opts.nWorkers ~= Inf
             p = parpool(opts.nWorkers);
         else
             p = parpool();
         end
-    elseif opts.nWorkers ~= 0 && p.NumWorkers ~= opts.nWorkers
+    elseif opts.nWorkers ~= Inf && p.NumWorkers ~= opts.nWorkers
         delete(p);
         p = parpool(opts.nWorkers);
     end

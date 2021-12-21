@@ -97,6 +97,6 @@ else
     P.beq = model.b;
     P.Aeq = model.S;
     opts = default_options();
-    opts.nWorkers = 0;  % 0 means the default number of workers in the Parallel Computing Toolbox
+    opts.nWorkers = Inf;  % Inf means the default number of workers in the Parallel Computing Toolbox
     o = sample(P, 200, opts);
 end
