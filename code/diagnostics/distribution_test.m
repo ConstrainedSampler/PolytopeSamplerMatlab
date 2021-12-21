@@ -99,8 +99,8 @@ for i = 1:N
    if (a * r > dim)
       v = gammainc(a, dim) / gammainc(a * r, dim);
    else
-      v = gammainc(a, dim, 'scaledlower') / gammainc(a * r, dim, 'scaledlower');
-      v = v * exp(a * (r-1)) / r^dim;
+      v = scaledgammainc(a, dim) / scaledgammainc(a * r, dim);
+      v = v * exp(a * (r-1) - dim * log(r));
    end
    unif_vals(i) = real(v);
 end
@@ -149,4 +149,14 @@ function t = binary_search(g, a, b, tol)
       end
       t = (a+b)/2;
    end
+end
+
+function t = scaledgammainc(a, d)
+assert(a <= d);
+if (a >= -d-20)
+   t = gammainc(a, d, 'scaledlower');
+else
+   t = (d)/(d-1-a)-(d*(d-1))/(d-1-a)^3 - 2*d*(d-1)/(d-1-a)^4 + 3 * d * (d-1)^2 / (d-1-a)^5;
+   % this case should not happen. But I am adding this to avoid NaN
+end
 end

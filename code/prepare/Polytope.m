@@ -119,9 +119,9 @@ classdef Polytope < handle
          %% Simplify the polytope
          if o.opts.runSimplify
             if (~o.fZero)
-               o.fZero = false;
-               o.simplify();
                o.fZero = true;
+               o.simplify();
+               o.fZero = false;
             end
             o.simplify();
             
