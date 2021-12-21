@@ -48,7 +48,7 @@ function opts = default_options()
     % Presolve Options
     opts.presolve = struct;
     opts.presolve.runSimplify = true;
-    opts.presolve.ipmMaxIter = 100;
+    opts.presolve.ipmMaxIter = 200;
     opts.presolve.ipmDualTol = 1e-12;
     opts.presolve.ipmDistanceTol = 1e-8; % we assume a constraint is tight if dist to constraint < distanceTol
     opts.presolve.splitDenseCols = 30;
