@@ -19,8 +19,14 @@ classdef MixingTimeEstimator < handle
         
         function o = step(o, s)
             if mean(s.nEffectiveStep) > o.nextEstimateStep
-                ess = effective_sample_size(s.chains);
-                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                if ~isNaN(s.mixingTime) && s.mixingTime * s.opts.nRemoveInitialSamples < size(s.chains, 3)/2
+                    k = ceil(s.mixingTime * s.opts.nRemoveInitialSamples);
+                    ess = effective_sample_size(s.chains(:,:,k:end));
+                    s.mixingTime = s.iterPerRecord * (size(s.chains, 3)-k) / min(ess, [], 'all');
+                else
+                    ess = effective_sample_size(s.chains);
+                    s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                end
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
                 o.estNumSamples = s.i * o.sampleRate;
                 s.share('sampleRate', o.sampleRate);

@@ -42,12 +42,13 @@ classdef MemoryStorage < handle
             if s.opts.rawOutput
                 s.output.chains = s.chains;
             else
-                ess = min(effective_sample_size(s.chains), [], 1);
+                k = ceil(s.mixingTime * s.opts.nRemoveInitialSamples);
+                ess = min(effective_sample_size(s.chains(:,:,k:end)), [], 1);
                 N = size(s.chains,3);
                 out = [];
                 for i = 1:numel(ess)
                     gap = ceil(N/ess(i));
-                    out_i = s.chains(i, :, s.opts.nRemoveInitialSamples*gap:gap:N);
+                    out_i = s.chains(i, :, 1:gap:N);
                     out_i = reshape(out_i, [size(out_i,2) size(out_i,3)]);
                     out = [out out_i];
                 end
