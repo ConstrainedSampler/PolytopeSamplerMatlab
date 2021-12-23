@@ -106,8 +106,6 @@ classdef Sampler < dynamicprops
             
             % Initialize the point
             o.v = o.ham.resample(o.x, zeros(size(o.x)));
-            
-            o.output.prepareTime = toc(o.startTime);
         end
         
         function step(o)
@@ -180,7 +178,7 @@ classdef Sampler < dynamicprops
                 end
             end
             
-            o.output.sampleTime = toc(o.startTime) - o.output.prepareTime;
+            o.output.sampleTime = toc(o.startTime);
         end
         
         function log(o, tag, format, varargin)

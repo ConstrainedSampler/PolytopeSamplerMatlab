@@ -29,7 +29,6 @@ classdef MixingTimeEstimator < handle
                     s.acceptedStep = s.acceptedStep * (1-k / size(s.chains, 3));
                     s.chains = s.chains(:,:,k:end);
                     o.removedInitial = true;
-                    s.output.prepareTime = toc(s.startTime);
                     ess = effective_sample_size(s.chains);
                     ess = min(ess, [], 'all');
                 end
