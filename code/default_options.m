@@ -22,7 +22,6 @@ opts.maxStep = +Inf;
 opts.effectiveStepSize = 1;
 opts.initalStepSize = 0.2;
 opts.freezeMCMCAfterSamples = +Inf;
-opts.removeInitialSamplesPortion = 0.1; % the portion of samples we remove from the start
 opts.nRemoveInitialSamples = 10; % the number of samples we remove from the start
 
 % Module options
