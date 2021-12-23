@@ -123,9 +123,11 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
     o = struct;
     o.workerOutput = cell(opts.nWorkers, 1);
     o.sampleTime = 0;
+    o.prepareTime = prepareTime;
     for i = 1:opts.nWorkers
         o.workerOutput{i} = workerOutput{i};
         o.sampleTime = o.sampleTime + o.workerOutput{i}.sampleTime;
+        o.prepareTime = o.prepareTime + o.workerOutput{i}.prepareTime;
     end
     
     if ~opts.rawOutput
@@ -148,6 +150,7 @@ else
     end
     s.finalize();
     o = s.output;
+    o.prepareTime = o.prepareTime + prepareTime;
     
     if opts.profiling
         profile report
@@ -160,5 +163,3 @@ if ~opts.rawOutput
     o.samples = o.chains;
     o.summary = summary(o);
 end
-
-o.prepareTime = prepareTime;

@@ -44,6 +44,7 @@ classdef DynamicStepSize < handle
                 s.acceptedStep = 0;
                 s.nEffectiveStep = 0;
                 s.chains = zeros(s.opts.simdLen, s.ham.n, 0);
+                s.output.prepareTime = toc(s.startTime);
                 o.warmupFinished = true;
             end
             
