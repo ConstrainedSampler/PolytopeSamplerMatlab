@@ -42,16 +42,22 @@ classdef MemoryStorage < handle
             if s.opts.rawOutput
                 s.output.chains = s.chains;
             else
-                ess = min(effective_sample_size(s.chains), [], 1);
                 N = size(s.chains,3);
+                if o.opts.thinOutput
+                    ess = min(effective_sample_size(s.chains), [], 1);
+                else
+                    ess = N * ones(size(s.chains,1),1);
+                end
+                
                 out = [];
                 for i = 1:numel(ess)
                     gap = ceil(N/ess(i));
                     out_i = s.chains(i, :, 1:gap:N);
                     out_i = reshape(out_i, [size(out_i,2) size(out_i,3)]);
+                    out_i = s.problem.T * out_i + s.problem.y;
                     out = [out out_i];
                 end
-                s.output.chains = s.problem.T * out + s.problem.y;
+                s.output.chains = out;
             end
         end
     end

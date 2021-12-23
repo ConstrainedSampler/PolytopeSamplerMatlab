@@ -46,6 +46,7 @@ opts.MixingTimeEstimator.stepMultiplier = 2;
 opts.MemoryStorage = struct;
 opts.MemoryStorage.recordsPerIndependentSample = 5;
 opts.MemoryStorage.memoryLimit = 4*1024*1024*1024; % roughly 4GB per worker, this is not accurate.
+opts.MemoryStorage.thinOutput = true;
 
 % Presolve Options
 opts.presolve = struct;
