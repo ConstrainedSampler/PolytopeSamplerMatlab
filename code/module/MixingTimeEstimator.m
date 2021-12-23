@@ -19,7 +19,8 @@ classdef MixingTimeEstimator < handle
         
         function o = step(o, s)
             if mean(s.nEffectiveStep) > o.nextEstimateStep
-                ess = effective_sample_size(s.chains);
+                k = ceil(size(s.chains,3) * s.opts.removeInitialSamplesPortion);
+                ess = effective_sample_size(s.chains(:,:,k:end));
                 s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
                 o.estNumSamples = s.i * o.sampleRate;

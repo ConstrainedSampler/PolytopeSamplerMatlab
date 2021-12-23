@@ -42,7 +42,8 @@ classdef MemoryStorage < handle
             if s.opts.rawOutput
                 s.output.chains = s.chains;
             else
-                ess = min(effective_sample_size(s.chains), [], 1);
+                k = ceil(size(s.chains,3) * s.opts.removeInitialSamplesPortion);
+                ess = min(effective_sample_size(s.chains(:,:,k:end)), [], 1);
                 N = size(s.chains,3);
                 out = [];
                 for i = 1:numel(ess)
