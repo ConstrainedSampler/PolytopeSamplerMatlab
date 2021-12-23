@@ -23,7 +23,7 @@ classdef MixingTimeEstimator < handle
                 ess = effective_sample_size(s.chains);
                 ess = min(ess, [], 'all');
                 
-                if (o.removedInitial == false && ess > s.opts.nRemoveInitialSamples)
+                if (o.removedInitial == false && ess > 2 * s.opts.nRemoveInitialSamples)
                     k = ceil(s.opts.nRemoveInitialSamples * (size(s.chains, 3) / ess));
                     s.chains = s.chains(:,:,k:end);
                     s.i = ceil(s.i * k / size(s.chains, 3));
