@@ -16,18 +16,22 @@ classdef MemoryStorage < handle
                 s.chains(:,:,end+1) = s.x;
                 
                 % Thin the chain if
-                %   it exceeds the memory limit and
-                %   we store more samples than opts.recordsPerIndependentSample required
-                len = size(s.chains, 3);
+                %   it exceeds the memory limit or more samples than opts.maxRecordsPerIndependentSample required
                 if (isnan(s.mixingTime))
                     mixingTime = s.i;
+                    recordMax = 1;
                 else
                     mixingTime = s.mixingTime;
+                    recordMax = mixingTime / o.opts.maxRecordsPerIndependentSample;
+
+                    if (size(s.chains, 3) * s.iterPerRecord < 20 * mixingTime)
+                        recordMax = recordMax / 10; % if ess < 20, records more
+                    end
                 end
                 
                 mem = numel(s.chains) * 8;
-                if (mem > o.opts.memoryLimit)
-                   if (2 * s.iterPerRecord < mixingTime / o.opts.recordsPerIndependentSample)
+                if (mem > o.opts.memoryLimit || s.iterPerRecord < recordMax)
+                   if (2 * s.iterPerRecord < mixingTime)
                        s.chains = s.chains(:, :, 2:2:end);
                        s.iterPerRecord = s.iterPerRecord * 2;
                    else

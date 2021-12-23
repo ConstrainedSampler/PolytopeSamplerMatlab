@@ -1,6 +1,6 @@
 function opts = default_options()
 opts = struct;
-opts.seed = 'shuffle';
+opts.seed = [];
 opts.nWorkers = 1;
 
 % Linear System Options
@@ -44,7 +44,7 @@ opts.MixingTimeEstimator.initialStep = 20; % in terms of effective steps
 opts.MixingTimeEstimator.stepMultiplier = 2;
 
 opts.MemoryStorage = struct;
-opts.MemoryStorage.recordsPerIndependentSample = 5;
+opts.MemoryStorage.maxRecordsPerIndependentSample = 20;
 opts.MemoryStorage.memoryLimit = 4*1024*1024*1024; % roughly 4GB per worker, this is not accurate.
 opts.MemoryStorage.thinOutput = true;
 

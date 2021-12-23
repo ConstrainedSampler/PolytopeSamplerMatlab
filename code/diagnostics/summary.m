@@ -11,7 +11,7 @@ function smry = summary(o)
 % compute ess by summing over all chains
 
 % compute the rest of the summary
-rh = rhat(o.chains);
+rh = rhat(o.samples);
 st = std(o.samples, 0, 2);
 m = mean(o.samples,2);
 d = size(o.samples, 1);

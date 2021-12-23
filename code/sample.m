@@ -53,9 +53,9 @@ opts.startTime = t;
 compile_solver(0); compile_solver(opts.simdLen);
 
 %% Presolve
-rng(opts.seed, 'simdTwister');
-rng_cur = rng();
-opts.seed = rng_cur.Seed;
+if isempty(opts.seed)
+    opts.seed = randi(2^31);
+end
 
 if ischar(opts.logging) || isstring(opts.logging) % logging for Polytope
     fid = fopen(opts.logging, 'a');
@@ -101,6 +101,7 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
         p = parpool(opts.nWorkers);
     end
     opts.nWorkers = p.NumWorkers;
+    opts.N = N;
     
     spmd(opts.nWorkers)
         if opts.profiling
@@ -144,6 +145,7 @@ else
         profile on
     end
     
+    rng(opts.seed, 'simdTwister');
     s = Sampler(polytope, opts);
     while s.terminate == 0
         s.step();
@@ -161,5 +163,6 @@ o.opts = opts;
 
 if ~opts.rawOutput
     o.samples = o.chains;
+    o = rmfield(o, 'chains');
     o.summary = summary(o);
 end
