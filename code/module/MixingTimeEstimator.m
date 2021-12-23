@@ -4,6 +4,7 @@ classdef MixingTimeEstimator < handle
     properties
         opts
         
+        removedInitial = false
         sampleRate = 0
         sampleRateOutside = 0
         estNumSamples = 0
@@ -19,14 +20,17 @@ classdef MixingTimeEstimator < handle
         
         function o = step(o, s)
             if mean(s.nEffectiveStep) > o.nextEstimateStep
-                if ~isnan(s.mixingTime) && s.mixingTime * s.opts.nRemoveInitialSamples < size(s.chains, 3)/2
-                    k = ceil(s.mixingTime * s.opts.nRemoveInitialSamples);
-                    ess = effective_sample_size(s.chains(:,:,k:end));
-                    s.mixingTime = s.iterPerRecord * (size(s.chains, 3)-k) / min(ess, [], 'all');
-                else
-                    ess = effective_sample_size(s.chains);
-                    s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                ess = effective_sample_size(s.chains);
+                ess = min(ess, [], 'all');
+                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / ess;
+                
+                if (o.removedInitial == false && ess > s.opts.nRemoveInitialSamples)
+                    k = ceil(s.opts.nRemoveInitialSamples * (size(s.chains, 3) / ess));
+                    s.chains = s.chains(:,:,k:end);
+                    s.i = 0;
+                    o.removedInitial = true;
                 end
+                
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
                 o.estNumSamples = s.i * o.sampleRate;
                 s.share('sampleRate', o.sampleRate);
@@ -59,7 +63,7 @@ classdef MixingTimeEstimator < handle
                 s.freezed = true;
             end
             
-            if s.totalNumSamples > s.N
+            if s.totalNumSamples > s.N && o.removedInitial
                 s.share('estNumSamples', o.estNumSamples);
                 s.terminate = 1;
                 s.log('sample:end', '%i samples found.\n', s.totalNumSamples);

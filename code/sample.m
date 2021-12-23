@@ -101,7 +101,6 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
         p = parpool(opts.nWorkers);
     end
     opts.nWorkers = p.NumWorkers;
-    opts.N = N + opts.nRemoveInitialSamples * opts.nWorkers * opts.simdLen;
     
     spmd(opts.nWorkers)
         if opts.profiling
@@ -137,7 +136,7 @@ if opts.nWorkers ~= 1 && ~isempty(ver('parallel'))
         end
     end
 else
-    opts.N = N + opts.nRemoveInitialSamples * opts.simdLen;
+    opts.N = N;
 	
     if opts.profiling
         profile on
