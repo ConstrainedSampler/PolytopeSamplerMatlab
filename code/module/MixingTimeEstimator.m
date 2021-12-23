@@ -22,15 +22,17 @@ classdef MixingTimeEstimator < handle
             if mean(s.nEffectiveStep) > o.nextEstimateStep
                 ess = effective_sample_size(s.chains);
                 ess = min(ess, [], 'all');
-                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / ess;
                 
                 if (o.removedInitial == false && ess > s.opts.nRemoveInitialSamples)
                     k = ceil(s.opts.nRemoveInitialSamples * (size(s.chains, 3) / ess));
                     s.chains = s.chains(:,:,k:end);
-                    s.i = 0;
+                    s.i = ceil(s.i * k / size(s.chains, 3));
                     o.removedInitial = true;
+                    ess = effective_sample_size(s.chains);
+                    ess = min(ess, [], 'all');
                 end
-                
+
+                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / ess;
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
                 o.estNumSamples = s.i * o.sampleRate;
                 s.share('sampleRate', o.sampleRate);
