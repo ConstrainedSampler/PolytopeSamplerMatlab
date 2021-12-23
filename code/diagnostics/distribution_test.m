@@ -24,7 +24,7 @@ end
 assert(~o.opts.rawOutput, 'This function does not support raw output');
 
 defaults.toPlot = false;
-defaults.thinningFactor = 10;
+defaults.thinningFactor = 5;
 defaults.tol = 1e-8;
 opts = Setfield(defaults, opts);
 
