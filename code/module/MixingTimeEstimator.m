@@ -69,8 +69,11 @@ classdef MixingTimeEstimator < handle
                 s.share('estNumSamples', o.estNumSamples);
                 s.terminate = 1;
                 s.log('sample:end', '%i samples found.\n', s.totalNumSamples);
-            else
+            elseif o.removedInitial
                 estimateEndingStep = s.N / s.sampleRate * (mean(s.nEffectiveStep) / s.i);
+                o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
+            else
+                estimateEndingStep = 2 * s.opts.nRemoveInitialSamples / o.sampleRate * (mean(s.nEffectiveStep) / s.i);
                 o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
             end
         end
