@@ -5,7 +5,5 @@
 *.pdb
 *_ignore*
 .DS_Store
-paper/
-CHRR/
 coverage/problems/*extra/
 .MATLABDriveTag
