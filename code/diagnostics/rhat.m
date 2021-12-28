@@ -13,7 +13,6 @@ function [rhat_val] = rhat(x)
 % cell of matrices dim x N. Each matrix is a chain.
 % What is the correct formula in this case?
 % Update the comment also. It is wrong now.
-x = cell2mat(x);
 
 [~, N] = size(x);
 if mod(N, 2) == 1

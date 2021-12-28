@@ -10,6 +10,7 @@ classdef Hamiltonian < handle
         f       % the objective function and its derivatives in the original space
         barrier % TwoSidedBarrier
         P       % domain
+        lsc
         df
         ddf
         solver
@@ -80,8 +81,8 @@ classdef Hamiltonian < handle
             o.move(x);
             if ~o.prepared || isempty(o.last_dUdx)
                 o.prepare(x);
-                lsc = o.solver.leverageScoreComplement(o.opts.nSketch);
-                o.last_dUdx = o.barrier.tensor(x) .* lsc ./ (2*o.hess) + o.dfx;
+                o.lsc = o.solver.leverageScoreComplement(o.opts.nSketch);
+                o.last_dUdx = o.barrier.tensor(x) .* o.lsc ./ (2*o.hess) + o.dfx;
             end
             dUdx = o.last_dUdx;
         end

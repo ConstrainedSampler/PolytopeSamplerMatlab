@@ -4,6 +4,7 @@ classdef MixingTimeEstimator < handle
     properties
         opts
         
+        removedInitial = false
         sampleRate = 0
         sampleRateOutside = 0
         estNumSamples = 0
@@ -20,7 +21,19 @@ classdef MixingTimeEstimator < handle
         function o = step(o, s)
             if mean(s.nEffectiveStep) > o.nextEstimateStep
                 ess = effective_sample_size(s.chains);
-                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / min(ess, [], 'all');
+                ess = min(ess, [], 'all');
+                
+                if (o.removedInitial == false && ess > 2 * s.opts.nRemoveInitialSamples)
+                    k = ceil(s.opts.nRemoveInitialSamples * (size(s.chains, 3) / ess));
+                    s.i = ceil(s.i * (1-k / size(s.chains, 3)));
+                    s.acceptedStep = s.acceptedStep * (1-k / size(s.chains, 3));
+                    s.chains = s.chains(:,:,k:end);
+                    o.removedInitial = true;
+                    ess = effective_sample_size(s.chains);
+                    ess = min(ess, [], 'all');
+                end
+
+                s.mixingTime = s.iterPerRecord * size(s.chains, 3) / ess;
                 o.sampleRate = size(s.chains,1) / s.mixingTime;
                 o.estNumSamples = s.i * o.sampleRate;
                 s.share('sampleRate', o.sampleRate);
@@ -53,12 +66,15 @@ classdef MixingTimeEstimator < handle
                 s.freezed = true;
             end
             
-            if s.totalNumSamples > s.N
+            if s.totalNumSamples > s.N && o.removedInitial
                 s.share('estNumSamples', o.estNumSamples);
                 s.terminate = 1;
                 s.log('sample:end', '%i samples found.\n', s.totalNumSamples);
-            else
+            elseif o.removedInitial
                 estimateEndingStep = s.N / s.sampleRate * (mean(s.nEffectiveStep) / s.i);
+                o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
+            else
+                estimateEndingStep = (2 * s.opts.nRemoveInitialSamples * size(s.chains,1)) / o.sampleRate * (mean(s.nEffectiveStep) / s.i);
                 o.nextEstimateStep = min(o.nextEstimateStep * o.opts.stepMultiplier, estimateEndingStep);
             end
         end

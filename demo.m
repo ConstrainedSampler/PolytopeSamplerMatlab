@@ -9,7 +9,7 @@ o = sample(P, 2000); % Number of samples = 2000
 s = o.samples;
 histogram(sum(s), 0.9:0.005:1)
 title('distribution of l1 norm of simplex');
-uniformtest(o, struct('toPlot', true));
+distribution_test(o, struct('toPlot', true));
 drawnow()
 
 %% Example 2: Sample uniform from Birkhoff polytope
@@ -84,7 +84,6 @@ P.ub = model.ub;
 P.beq = model.b;
 P.Aeq = model.S;
 o = sample(P, 100);
-uniformtest(o, struct('toPlot', true));
 
 %% Example 6: Run the sampler in parallel
 initSampler
@@ -98,7 +97,6 @@ else
     P.beq = model.b;
     P.Aeq = model.S;
     opts = default_options();
-    opts.nWorkers = Inf;  % 0 means the default number of workers in the Parallel Computing Toolbox
+    opts.nWorkers = Inf;  % Inf means the default number of workers in the Parallel Computing Toolbox
     o = sample(P, 200, opts);
-    [pVal] = uniformtest(o, struct('toPlot', true));
 end

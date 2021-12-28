@@ -14,8 +14,10 @@ classdef ProgressBar < handle
     
     methods
         function o = ProgressBar(s)
+		    o.refreshInterval = s.opts.ProgressBar.refreshInterval;
+			
             if (s.N ~= Inf)
-                o.nSamplesTextLength = max(length(num2str(s.N)), 6);
+                o.nSamplesTextLength = max(length(num2str(s.N)), 5);
                 o.nSamplesFieldLength = 2 * o.nSamplesTextLength + 3;
             end
             

@@ -104,7 +104,7 @@ namespace PackedCSparse {
 		
 		std::uniform_real_distribution<double> distribution(-sqrt(3.0),sqrt(3.0));
 		for (Ti i = 0; i < m * k_; i++)
-			d[i] = Tx(distribution(o.gen)); // uniform distribution with mean 0 and variance 1
+			d[i] = Tx(distribution(o.gen)); // roughly uniform distribution with variance 1
 
 		for (Ti i = 0; i < n * k_; i++)
 			AtL_d[i] = T0;

@@ -1,8 +1,7 @@
-function [x3, v3, step] = gauss_legendre(x0, v0, h, ham, opts)
+function [x4, v4, step] = gauss_legendre(x0, v0, h, ham, opts)
     % Step 1
-    ham.prepare(x0);
+    x1 = x0;
     v1 = v0 - (h/2) * ham.DU(x0);
-    x1 = ham.project(x0, h);
     done = 0;
 
     % Step 2
@@ -27,13 +26,13 @@ function [x3, v3, step] = gauss_legendre(x0, v0, h, ham, opts)
         if (max(dist,[],'all') < opts.implicitTol)
             done = 1;
             break;
-        elseif any(~isfinite(dist),'all')
+        elseif any(dist > 1e16, 'all')
             break;
         end
     end
     
     if done == 0
-        x3 = NaN; v3 = NaN;
+        x4 = NaN; v4 = NaN;
         return
     end
     
@@ -43,4 +42,9 @@ function [x3, v3, step] = gauss_legendre(x0, v0, h, ham, opts)
     % Step 3
     x3 = x2;
     v3 = v2 - (h/2) * ham.DU(x3);
+    
+    % Step 4 (Project to Ax = b)
+    ham.prepare(x3);
+    v4 = v3;
+    x4 = ham.project(x3);
 end

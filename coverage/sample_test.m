@@ -1,4 +1,4 @@
-function uniform_sample_test(debug, folders, problems, num_samples)
+function sample_test(debug, folders, problems, num_samples, func)
 s = TestSuite;
 if nargin >= 2 && ~isempty(folders)
     s.problemFilter.folders = folders;
@@ -18,20 +18,32 @@ s.printFormat.preTime = '8.2f';
 s.printFormat.stepSize = '10f';
 s.printFormat.nStep = '10i';
 s.printFormat.avgAcc = '15.3e';
-s.testFunc = @(name) test_func(name, num_samples, debug);
+s.testFunc = @(name) test_func(name, num_samples, debug, func);
 s.test();
 end
 
-function o = test_func(name, num_samples, debug)
+function o = test_func(name, num_samples, debug, func)
 
 % load the problem and truncate it to make it bounded
 P = loadProblem(name);
 P_opts = default_options();
 P_opts.maxTime = 3600*8;
-P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DebugLogger'};
+P_opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'DynamicWeight', 'DebugLogger'};
 if debug
     P_opts.module{end+1} = 'ProgressBar';
 end
+d = size(P.lb,1);
+
+switch func
+   case 'uniform'
+   case 'expoential'
+      P.df = randn(d, 1);
+   case 'normal'
+      P.f = @(x) x'*x/2;
+      P.df = @(x) x;
+      P.ddf = @(x) ones(d,1);
+end
+
 sample_out = sample(P, num_samples, P_opts);
 
 o = {};
@@ -42,7 +54,7 @@ o.preTime = sample_out.prepareTime;
 o.stepSize = sample_out.sampler.stepSize;
 o.nStep = sample_out.totalStep;
 o.avgAcc = mean(sample_out.averageAccuracy);
-[o.pVal] = uniformtest(sample_out);
+[o.pVal] = distribution_test(sample_out);
 o.mixing = sample_out.sampler.mixingTime;
 
 if (o.mixing < 500 && o.pVal > 0.005 && o.pVal < 0.995)

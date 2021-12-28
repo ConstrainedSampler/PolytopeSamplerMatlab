@@ -16,11 +16,10 @@ P.lb = zeros(d, 1);
 p = zeros(N,1);
 parfor i = 1:N
     opts = default_options();
-    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize'};
+    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicWeight', 'DynamicStepSize'};
     opts.seed = i;
     o = sample(P, 1000, opts);
     p(i) = uniformtest(o);
-	fprintf('%i: %f\n', i, p(i))
 end
 
 % Look by eye to see if this is uniform
@@ -31,7 +30,7 @@ assert(z > 0.05);
 %% understand the worst case
 if (0)
     opts = default_options();
-    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicStepSize', 'ProgressBar'};
+    opts.module = {'MixingTimeEstimator', 'MemoryStorage', 'DynamicRegularizer', 'DynamicWeight', 'DynamicStepSize'};
     opts.seed = find(p == min(p));
     o = sample(P, 1000, opts);
     uniformtest(o, struct('toPlot', true));

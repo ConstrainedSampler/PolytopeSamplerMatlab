@@ -16,22 +16,28 @@ classdef MemoryStorage < handle
                 s.chains(:,:,end+1) = s.x;
                 
                 % Thin the chain if
-                %   it exceeds the opts.minNumRecords and
-                %   we store more samples than opts.recordsPerIndependentSample required
-                len = size(s.chains, 3);
+                %   it exceeds the memory limit or more samples than opts.maxRecordsPerIndependentSample required
                 if (isnan(s.mixingTime))
                     mixingTime = s.i;
+                    recordMax = 1;
                 else
                     mixingTime = s.mixingTime;
+                    recordMax = mixingTime / o.opts.maxRecordsPerIndependentSample;
+
+                    if (size(s.chains, 3) * s.iterPerRecord < 20 * mixingTime)
+                        recordMax = recordMax / 10; % if ess < 20, records more
+                    end
                 end
                 
-                if len >= o.opts.minNumRecords && 2 * s.iterPerRecord < mixingTime / o.opts.recordsPerIndependentSample
-                    h = max(mixingTime / (o.opts.recordsPerIndependentSample * s.iterPerRecord), 1);
-                    h = min(h, 2 * len/o.opts.minNumRecords);
-                    h = ceil(h);
-                    idx = ceil(h*(1:floor(len / h))) + (len - ceil(h * floor(len / h)));
-                    s.chains = s.chains(:, :, idx);
-                    s.iterPerRecord = s.iterPerRecord * h;
+                mem = numel(s.chains) * 8;
+                if (mem > o.opts.memoryLimit || s.iterPerRecord < recordMax)
+                   if (2 * s.iterPerRecord < mixingTime)
+                       s.chains = s.chains(:, :, 2:2:end);
+                       s.iterPerRecord = s.iterPerRecord * 2;
+                   else
+                       s.log('warning', 'Algorithm stops due to out of memory (opts.MemoryStorage.memoryLimit = %f byte).\n', o.opts.memoryLimit);
+                       s.terminate = 2;
+                   end
                 end
             end
         end
@@ -40,13 +46,21 @@ classdef MemoryStorage < handle
             if s.opts.rawOutput
                 s.output.chains = s.chains;
             else
-                d = size(s.chains);
-                n = size(s.problem.y, 1);
-                out = permute(s.chains, [2 3 1]);
-                out = reshape(out, [d(2) d(3)*d(1)]);
-                out = s.problem.T * out + s.problem.y;
-                out = reshape(out, [n d(3) d(1)]);
-                out = squeeze(num2cell(out, [1 2]))';
+                N = size(s.chains,3);
+                if o.opts.thinOutput
+                    ess = min(effective_sample_size(s.chains), [], 1);
+                else
+                    ess = N * ones(size(s.chains,1),1);
+                end
+                
+                out = [];
+                for i = 1:numel(ess)
+                    gap = ceil(N/ess(i));
+                    out_i = s.chains(i, :, 1:gap:N);
+                    out_i = reshape(out_i, [size(out_i,2) size(out_i,3)]);
+                    out_i = s.problem.T * out_i + s.problem.y;
+                    out = [out out_i];
+                end
                 s.output.chains = out;
             end
         end

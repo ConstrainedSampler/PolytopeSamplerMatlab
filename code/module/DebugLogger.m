@@ -21,7 +21,7 @@ classdef DebugLogger < handle
         
         function o = finalize(o, s)
             s.output.acceptedStep = s.acceptedStep;
-            s.output.totalStep = s.i;
+            s.output.totalStep = s.i; % ignore the warm up phase
             s.output.numCholesky = s.ham.solver.getDecomposeCount();
             s.output.averageAccuracy = s.output.averageAccuracy / s.i;
             s.output.sampler = s;
