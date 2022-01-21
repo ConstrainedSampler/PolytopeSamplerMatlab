@@ -1,6 +1,6 @@
 debug = 0;
 problems = [];
-folders = {'basic', 'metabolic', 'netlib', 'extra', 'netlib_extra'};
+folders = {'basic', 'metabolic', 'netlib'};
 presolve_test(debug, folders, problems)
 %%
 
