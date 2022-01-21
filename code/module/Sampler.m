@@ -148,7 +148,7 @@ classdef Sampler < dynamicprops
             end
 
             if (o.nWorkers > 1)
-                o.recieve();
+                o.receive();
                 o.broadcast();
             end
             
@@ -215,7 +215,7 @@ classdef Sampler < dynamicprops
             end
         end
         
-        function recieve(o)
+        function receive(o)
             updated = false;
             while (labProbe)
                 [data, idx, ~] = labReceive;

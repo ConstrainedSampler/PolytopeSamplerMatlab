@@ -25,7 +25,7 @@ classdef MexSolver < handle
          o = s;
       end
       
-      function func_name = solverName(simd_len, flag)
+      function func_name = solverName(simd_len)
          if ismac()
             [~,result] = system('sysctl -n machdep.cpu.brand_string');
             if contains(result,'Apple')
@@ -42,14 +42,12 @@ classdef MexSolver < handle
             func_name = ['PackedChol' num2str(simd_len)];
          end
          
-         if nargin == 1 || flag == true
-            if exist([func_name 'native']) == 3
-                  func_name = [func_name 'native'];
-            elseif strcmp(chip, 'x86')
-               s = cpuInfo();
-               if (~(s.AVX2 && s.OS_AVX && s.FMA))
-                  func_name = [func_name 'SSE'];
-               end
+         if exist([func_name 'native']) == 3
+               func_name = [func_name 'native'];
+         elseif strcmp(chip, 'x86')
+            s = cpuInfo();
+            if (~(s.AVX2 && s.OS_AVX && s.FMA))
+               func_name = [func_name 'SSE'];
             end
          end
       end

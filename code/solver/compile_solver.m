@@ -4,7 +4,7 @@ if nargin < 2, recompile = false; end
 if nargin < 3, arch = 'native'; end
 
 % check if the solver exists
-func_name = MexSolver.solverName(simd_len, false);
+func_name = MexSolver.solverName(simd_len);
 if (~recompile && exist(func_name) == 3)
    try
       pchol = str2func(func_name);
@@ -36,8 +36,7 @@ if (recompile)
        archflag = '';
        nameflag = '';
        mex_string2 = ['CFLAGS="$CFLAGS ' archflag '"'];
-   else
-   if (contains(compiler, 'MSVCPP'))
+   elseif (contains(compiler, 'MSVCPP'))
       switch arch
          case 'native'
             s = cpuInfo();
@@ -85,7 +84,6 @@ if (recompile)
       mex_string2 = ['CFLAGS="$CFLAGS ' archflag '"'];
    else
       error('Currently, we only support MSVCPP, Clang++ or g++ as the compiler.');
-   end
    end
    outputfile = [outputfile nameflag];
    mex_string = [mex_string mex_string2];
