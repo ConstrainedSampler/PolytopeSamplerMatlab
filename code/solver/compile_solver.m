@@ -89,7 +89,7 @@ if (recompile)
    mex_string = [mex_string mex_string2];
    
    c = {};
-   c{end+1} = '%mex_string -output %outputfile %libpath/PackedChol.cpp %qdpath/util.cc %qdpath/bits.cc %qdpath/dd_real.cc %qdpath/dd_const.cc %qdpath/qd_real.cc %qdpath/qd_const.cc';
+   c{end+1} = '%mex_string -output "%outputfile" "%libpath/PackedChol.cpp" "%qdpath/util.cc" "%qdpath/bits.cc" "%qdpath/dd_real.cc" "%qdpath/dd_const.cc" "%qdpath/qd_real.cc" "%qdpath/qd_const.cc"';
    
    %% replace keywords
    keywords = {'%mex_string', '%qdpath', '%libpath', '%outputfile'};
