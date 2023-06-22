@@ -91,7 +91,7 @@ classdef Polytope < handle
          o.ddfHandle = isa(o.ddf, 'function_handle');
          o.vdim = 1;
          
-         if (~o.fHandle || ~o.dfHandle || ~o.ddfHandle)
+         if (~o.fHandle && ~o.dfHandle && ~o.ddfHandle)
             normf = norm(o.f) + norm(o.df) + norm(o.ddf);
             o.fZero = (normf == 0);
          else
