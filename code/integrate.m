@@ -73,7 +73,7 @@ if ischar(opts.logging) || isstring(opts.logging)
 end
 
 d = polytope.n;
-fprintf('d is %d\n', d);
+% fprintf('d is %d\n', d);
 if (nargin <= 3)
     B = 2 * d;
 end
@@ -99,10 +99,10 @@ for i = 1:num_of_iter-1
 
     o = sample(problem, k, opts);
     W = W * mean(density(o.samples).^(1/B *(1+1/sqrt(d))^i - a));    
-    fprintf('W after iteration %d is %d\n', i, W);
+%     fprintf('W after iteration %d is %d\n', i, W);
     clear o
     a = 1/B * (1+1/sqrt(d))^i;
-    fprintf('a after iteration %d is %d\n', i, a);
+%     fprintf('a after iteration %d is %d\n', i, a);
     problem.f = @(x) a * f(x);
     problem.df = @(x) a * df(x);
     if isa(ddf, 'function_handle')
